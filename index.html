@@ -1,0 +1,2105 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planet Under Pressure</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600;700&display=swap');
+
+:root{
+  --rood:#C0392B; --groen:#2E7D32; --zwart:#2C2C2C; --geel:#D4A017;
+  --bg:#14161a; --panel:#1d2026; --panel2:#23272f; --cream:#E8E3D9;
+  --line:#3a3f48; --muted:#8a8f99;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--cream);font-family:'Barlow',sans-serif;font-size:14px;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+h1,h2,h3,.cond{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:1px}
+button{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:1px;cursor:pointer;border:none;border-radius:3px}
+button:disabled{opacity:.35;cursor:not-allowed}
+
+/* ── TOPBAR ── */
+#topbar{display:flex;align-items:center;gap:18px;padding:8px 16px;background:#101216;border-bottom:1px solid var(--line);flex-shrink:0}
+#topbar h1{font-size:20px;font-weight:900;letter-spacing:2px}
+#topbar h1 span{color:var(--rood)}
+.topinfo{display:flex;gap:16px;align-items:center;font-size:13px}
+.topinfo .chip{background:var(--panel2);padding:3px 10px;border-radius:3px;font-family:'Barlow Condensed';letter-spacing:1px;text-transform:uppercase;font-size:12px}
+#topbar .spacer{flex:1}
+.tbtn{background:var(--panel2);color:var(--cream);padding:6px 12px;font-size:12px}
+.tbtn:hover{background:#2e333d}
+
+/* ── LAYOUT ── */
+#main{flex:1;display:flex;min-height:0}
+#boardwrap{flex:1;position:relative;background:#0e2134;min-width:0}
+#board{width:100%;height:100%}
+#sidebar{width:320px;flex-shrink:0;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;overflow-y:auto;padding:10px;gap:10px}
+.sb-box{background:var(--panel2);border-radius:4px;padding:8px 10px}
+.sb-box h3{font-size:12px;color:var(--muted);letter-spacing:2px;margin-bottom:6px}
+
+/* tracks */
+.track{display:flex;align-items:center;gap:6px;margin-bottom:5px;font-size:13px}
+.track .tlabel{width:118px;font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1px;font-size:12px;color:#b9b4aa}
+.pips{display:flex;gap:3px}
+.pip{width:13px;height:13px;border-radius:2px;background:#33363e;border:1px solid #494e58}
+.pip.on{background:var(--geel);border-color:var(--geel)}
+.pip.danger.on{background:var(--rood);border-color:var(--rood)}
+.pip.soc.on{background:#5DADE2;border-color:#5DADE2}
+.pip.eco.on{background:#27ae60;border-color:#27ae60}
+.tnum{font-weight:700;margin-left:4px}
+
+/* cures */
+.cure{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:3px;margin-bottom:3px;background:#1a1d23;border-left:3px solid var(--c)}
+.cure .cicon{font-size:16px}
+.cure .cname{flex:1;font-family:'Barlow Condensed';text-transform:uppercase;font-size:12px;letter-spacing:.5px;line-height:1.1}
+.cure .cstat{font-size:11px;color:var(--muted)}
+.cure.done{background:#1e2b1e}
+.cure.done .cstat{color:#6fc06f;font-weight:700}
+
+/* supplies + decks */
+.supplies{display:flex;gap:10px;justify-content:space-between}
+.sup{display:flex;align-items:center;gap:5px;font-size:13px;font-weight:700}
+.supcube{width:13px;height:13px;border-radius:2px}
+.deckrow{display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px}
+.deckrow b{color:#fff}
+
+/* legacies */
+.leg{font-size:12px;padding:5px 7px;border-radius:3px;margin-bottom:4px;line-height:1.3}
+.leg.neg{background:#2c1b1b;border-left:3px solid var(--rood)}
+.leg.pos{background:#1b2c1e;border-left:3px solid var(--groen)}
+.leg .lt{font-weight:700;font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:.5px}
+.leg .lsub{color:var(--muted);font-size:11px}
+
+/* log */
+#log{font-size:12px;line-height:1.45;max-height:200px;overflow-y:auto}
+#log div{padding:2px 0;border-bottom:1px solid #2a2e36}
+#log .l-bad{color:#e88}
+#log .l-good{color:#8fd08f}
+#log .l-sys{color:#d9b85c}
+#log .l-dim{color:var(--muted)}
+
+/* ── BOTTOM ── */
+#bottom{flex-shrink:0;background:#101216;border-top:1px solid var(--line);padding:8px 14px;display:flex;gap:14px;align-items:stretch;min-height:128px}
+#playerinfo{width:230px;flex-shrink:0;display:flex;flex-direction:column;gap:4px;justify-content:center}
+#playerinfo .pname{font-family:'Barlow Condensed';font-weight:900;font-size:19px;text-transform:uppercase;letter-spacing:1px}
+#playerinfo .prole{font-size:12px;color:var(--muted);line-height:1.25}
+#playerinfo .pacts{font-size:13px}
+.actdots{display:inline-flex;gap:4px;margin-left:6px;vertical-align:middle}
+.adot{width:11px;height:11px;border-radius:50%;background:#33363e}
+.adot.on{background:var(--cream)}
+#hand{flex:1;display:flex;gap:7px;align-items:center;overflow-x:auto;padding:4px 0}
+.hcard{width:86px;height:104px;border-radius:5px;background:var(--cream);color:#222;flex-shrink:0;position:relative;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;box-shadow:0 2px 8px rgba(0,0,0,.5);transition:transform .12s}
+.hcard:hover{transform:translateY(-5px)}
+.hcard .stripe{height:5px;background:var(--c)}
+.hcard .hname{font-family:'Barlow Condensed';font-weight:900;font-size:13px;text-transform:uppercase;line-height:1.05;padding:5px 6px 2px;color:#1c1c1c}
+.hcard .hregion{font-size:8.5px;text-transform:uppercase;letter-spacing:.5px;color:#888;padding:0 6px}
+.hcard .hfoot{margin-top:auto;background:var(--c);color:#fff;font-size:9px;font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1px;padding:3px 6px;display:flex;justify-content:space-between}
+.hcard.event{outline:2px solid var(--geel);outline-offset:-2px}
+.hcard.event .hdesc{font-size:8.5px;color:#555;padding:2px 6px;line-height:1.25}
+#actions{width:330px;flex-shrink:0;display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;align-content:center}
+.abtn{background:var(--panel2);color:var(--cream);padding:8px 4px;font-size:12px;border:1px solid #353a44}
+.abtn:hover:not(:disabled){background:#323845;border-color:#4a5160}
+.abtn.primary{background:#7a2620;border-color:#a03328}
+.abtn.primary:hover:not(:disabled){background:#94342b}
+
+/* ── SVG board ── */
+.land{fill:#3e5a76;stroke:#7da0bf;stroke-width:.6;stroke-opacity:.5}
+.grat{stroke:#ffffff09;stroke-width:1}
+.edge{stroke:#aac4da;stroke-opacity:.45;stroke-width:2}
+.edge.pacific{stroke-dasharray:6 5}
+.citydot{cursor:pointer}
+.citydot circle.main{stroke:#fff;stroke-width:2;filter:drop-shadow(0 1px 3px rgba(0,0,0,.65))}
+.citydot circle.halo{fill:none;stroke:transparent}
+.citydot.cur circle.halo{stroke:#ffffffaa;stroke-width:2;stroke-dasharray:4 3}
+.citydot.reach circle.halo{stroke:#ffffff40;stroke-width:1.5;stroke-dasharray:2 4}
+.citydot.reach:hover circle.halo{stroke:#FFD54F;stroke-width:2.5}
+.citydot.hl circle.main{stroke:#FFD54F;stroke-width:3.5;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{stroke-opacity:1}50%{stroke-opacity:.3}}
+.cname2{font-family:'Barlow Condensed';font-size:12px;font-weight:700;fill:#fff;letter-spacing:.4px;text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:#0b1623;stroke-width:3px}
+.regionlabel{font-family:'Barlow Condensed';font-size:11px;fill:#ffffff2e;letter-spacing:3px;text-transform:uppercase;text-anchor:middle;pointer-events:none}
+.regionlabel.tipped{fill:#E0584C;fill-opacity:.75;font-weight:700;animation:pulse 1.4s infinite}
+.cube{cursor:help}
+.cubecount{font-size:9px;font-weight:700;fill:#fff;font-family:'Barlow',sans-serif;paint-order:stroke;stroke:#0b1623;stroke-width:2.5px;pointer-events:none}
+.bbadge rect{fill:#F4EFE3;stroke:#0b1623;stroke-width:1}
+.bbadge text{font-size:11px;font-weight:900;fill:#1c1c1c;text-anchor:middle;font-family:'Barlow Condensed'}
+.pawn{filter:drop-shadow(0 1px 2px rgba(0,0,0,.7));pointer-events:none}
+.ic{vertical-align:-3px;margin-right:5px}
+.citydot.flash circle.halo{stroke:#FFD54F;animation:fl .9s ease-out forwards}
+.citydot.flashout circle.halo{stroke:#FF5252;animation:flo 1.1s ease-out forwards}
+@keyframes fl{from{r:12;stroke-opacity:.95;stroke-width:5}to{r:32;stroke-opacity:0;stroke-width:1}}
+@keyframes flo{from{r:14;stroke-opacity:1;stroke-width:7}to{r:46;stroke-opacity:0;stroke-width:1}}
+
+/* zoom-knoppen */
+#zoomctl{position:absolute;right:12px;top:12px;display:flex;flex-direction:column;gap:4px;z-index:9}
+#zoomctl button{width:32px;height:32px;font-size:17px;background:#1d2026dd;color:var(--cream);border:1px solid #3c424e;border-radius:4px}
+#zoomctl button:hover{background:#323845}
+#maphint{position:absolute;right:12px;bottom:10px;font-size:11px;color:#ffffff55;z-index:9;pointer-events:none;font-family:'Barlow Condensed';letter-spacing:1px;text-transform:uppercase}
+#legend{position:absolute;left:12px;bottom:10px;background:#0b1623cc;border:1px solid #ffffff1e;border-radius:5px;padding:8px 11px;z-index:9;font-size:11px;color:#c8c3b8;line-height:1.7;pointer-events:none}
+#legend .lg-title{font-family:'Barlow Condensed';letter-spacing:2px;font-size:10px;color:#8a9bb0;margin-bottom:2px}
+#legend .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;border:1px solid #0b1623}
+#legend .lg-note{color:#FFD54F;font-size:10px;margin-top:2px}
+.advies{font-size:11px;color:#FFD54F;margin-top:3px;line-height:1.35}
+
+/* ── PRESSURE-KAART ONTHULLING (Canva-stijl) ── */
+#ptoast{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:20;pointer-events:none}
+#ptoast .pcard{width:400px;border-radius:10px;overflow:hidden;background:#EDE6D6;box-shadow:0 22px 70px #000e;transform:translateY(16px) scale(.95);opacity:0;transition:transform .22s ease,opacity .22s ease}
+#ptoast.show .pcard{transform:none;opacity:1}
+.pc-art{position:relative;height:148px;overflow:hidden}
+.pc-art svg{position:absolute;bottom:-2px;left:0;width:100%}
+.pc-city{position:absolute;top:14px;left:0;right:0;text-align:center;font-family:'Barlow Condensed';font-weight:900;font-size:40px;line-height:1;color:#fff;letter-spacing:7px;text-transform:uppercase;text-shadow:0 2px 12px #0009}
+.pc-eyebrow{position:absolute;top:4px;left:0;right:0;text-align:center;font-family:'Barlow Condensed';font-size:10px;letter-spacing:4px;color:#ffffffb8;text-transform:uppercase}
+.pc-body{padding:10px 16px 12px;color:#222}
+.pc-badge{font-family:'Barlow Condensed';font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--c);font-weight:700;display:flex;align-items:center;gap:6px}
+.pc-badge i{width:9px;height:9px;border-radius:50%;background:var(--cn);display:inline-block}
+.pc-title{font-weight:700;font-size:18px;margin:2px 0 3px;border-bottom:1.5px solid #2c2c2c33;padding-bottom:3px}
+.pc-effect{font-size:13.5px;font-weight:600}
+.pc-comp{margin-top:7px;border:1.5px solid var(--c);color:#5a1c14;padding:6px 9px;border-radius:3px;font-size:12px;background:#ffffff66}
+.pc-foot{background:#191919;color:#E8E3D9;display:flex;justify-content:space-between;align-items:center;padding:7px 13px;font-family:'Barlow Condensed';letter-spacing:2px;font-size:10.5px;text-transform:uppercase}
+.pc-foot .pc-type{color:var(--cn);font-weight:700}
+.pc-foot .pc-pr{color:#8a8f99}
+
+/* BGA-achtige actieknoppen */
+.abtn{background:#262b34;border:1px solid #3d4450;border-radius:5px;padding:10px 5px;font-size:13px;color:#e9e4d9;transition:background .1s,transform .1s}
+.abtn:hover:not(:disabled){background:#333a47;border-color:#52617a;transform:translateY(-1px)}
+.abtn.wide{grid-column:1/-1;font-size:14.5px;padding:11px;font-weight:700;letter-spacing:1.5px}
+
+/* indicator-legenda */
+.dir{font-size:10px;font-family:'Barlow Condensed';letter-spacing:.5px;text-transform:uppercase;margin-left:6px;white-space:nowrap}
+.dir.good{color:#7fc97f}
+.dir.bad{color:#e88}
+.tip{font-size:10.5px;color:var(--muted);margin-top:2px}
+
+/* ── MODAL ── */
+#modalroot{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#000a;z-index:50}
+#modalroot.show{display:flex}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:6px;width:min(560px,92vw);max-height:86vh;display:flex;flex-direction:column;box-shadow:0 10px 50px #000c}
+.modal .mhead{padding:12px 16px;border-bottom:1px solid var(--line);font-family:'Barlow Condensed';font-weight:900;font-size:18px;text-transform:uppercase;letter-spacing:1.5px}
+.modal .mbody{padding:14px 16px;overflow-y:auto;line-height:1.5;font-size:13.5px}
+.modal .mfoot{padding:10px 16px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.mbtn{background:var(--panel2);color:var(--cream);padding:8px 16px;font-size:13px;border:1px solid #3c424e}
+.mbtn:hover{background:#323845}
+.mbtn.primary{background:#7a2620;border-color:#a03328}
+.mbtn.good{background:#1f4d28;border-color:#2E7D32}
+.bigcard{width:150px;height:200px;border-radius:8px;margin:0 auto;background:var(--cream);color:#222;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 6px 24px #000a;position:relative}
+.bigcard .stripe{height:8px;background:var(--c)}
+.bigcard .bname{font-family:'Barlow Condensed';font-weight:900;font-size:19px;text-transform:uppercase;padding:10px 10px 2px;line-height:1.05}
+.bigcard .bregion{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;padding:0 10px}
+.bigcard .bdesc{font-size:11px;color:#444;padding:8px 10px;line-height:1.35}
+.bigcard .bfoot{margin-top:auto;background:var(--c);color:#fff;font-family:'Barlow Condensed';font-size:10px;text-transform:uppercase;letter-spacing:1px;padding:5px 10px}
+.bigcard.esc{background:#2C2C2C;color:var(--cream)}
+.bigcard.esc .bname{color:#ff6b5e}
+.bigcard.esc .bdesc{color:#bbb}
+.cardpickrow{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.pickcard{width:78px;height:96px;border-radius:4px;background:var(--cream);color:#222;cursor:pointer;overflow:hidden;display:flex;flex-direction:column;border:2px solid transparent}
+.pickcard.sel{border-color:#5DADE2;transform:translateY(-3px)}
+.pickcard .stripe{height:4px;background:var(--c)}
+.pickcard .hname{font-family:'Barlow Condensed';font-weight:900;font-size:11.5px;text-transform:uppercase;padding:4px 5px 1px;line-height:1.05}
+.pickcard .hregion{font-size:7.5px;color:#888;text-transform:uppercase;padding:0 5px}
+.optbtn{display:block;width:100%;text-align:left;background:var(--panel2);color:var(--cream);padding:10px 12px;margin-bottom:6px;font-size:13px;border:1px solid #3c424e;font-family:'Barlow',sans-serif;text-transform:none;letter-spacing:0}
+.optbtn:hover:not(:disabled){background:#323845;border-color:#5DADE2}
+.optbtn b{font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1px}
+.optbtn .sub{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+.reqline{font-size:12px;margin:2px 0}
+.reqline.ok{color:#8fd08f}
+.reqline.no{color:#e88}
+
+/* ── SETUP ── */
+#setup{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 30%, #1d2433 0%, #101216 80%);z-index:60;display:flex;align-items:center;justify-content:center;overflow-y:auto}
+.setupwrap{display:flex;gap:16px;width:min(1060px,96vw);align-items:stretch;flex-wrap:wrap}
+.setupbox{flex:0 0 430px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:26px 30px}
+#setupinfo{flex:1;min-width:340px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:22px 26px;overflow-y:auto;max-height:86vh}
+#setupinfo h2{font-size:17px;font-weight:900;letter-spacing:2px;margin-bottom:12px;color:#fff}
+.si{margin-bottom:11px;font-size:13px;line-height:1.5;color:#c8c3b8}
+.si b{display:block;color:#fff;font-family:'Barlow Condensed';letter-spacing:1.2px;text-transform:uppercase;font-size:13px;margin-bottom:1px}
+.indrow{display:flex;align-items:center;gap:8px;font-size:12.5px;margin:3px 0;color:#c8c3b8}
+.indrow .sw{width:12px;height:12px;border-radius:2px;flex-shrink:0}
+.setupbox h1{font-size:34px;font-weight:900;letter-spacing:3px;line-height:1}
+.setupbox h1 span{color:var(--rood)}
+.setupbox .sub{color:var(--muted);font-size:13px;margin:4px 0 20px;letter-spacing:1px;text-transform:uppercase}
+.setupbox h3{font-size:13px;color:var(--muted);letter-spacing:2px;margin:16px 0 8px}
+.segment{display:flex;gap:6px}
+.segment button{flex:1;background:var(--panel2);color:var(--cream);padding:10px;font-size:14px;border:1px solid #3c424e}
+.segment button.sel{background:#7a2620;border-color:#c0392b}
+.nameinputs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.nameinputs input,.nameinputs select{background:var(--panel2);border:1px solid #3c424e;color:var(--cream);padding:9px 11px;border-radius:3px;font-family:'Barlow';font-size:13px;width:100%}
+#btnstart{width:100%;margin-top:22px;padding:14px;font-size:17px;font-weight:700;background:#7a2620;color:#fff;border:1px solid #a03328}
+#btnstart:hover{background:#94342b}
+.crisisrow{display:flex;gap:8px;margin-top:14px}
+.crisisrow .ct{flex:1;text-align:center;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:#b9b4aa;padding-top:6px;border-top:3px solid var(--c)}
+
+/* end overlay */
+#endoverlay{position:fixed;inset:0;background:#000d;z-index:70;display:none;align-items:center;justify-content:center;text-align:center}
+#endoverlay.show{display:flex}
+#endoverlay .ebox h1{font-size:52px;font-weight:900;letter-spacing:4px}
+#endoverlay .ebox p{color:var(--muted);margin:12px 0 24px;font-size:15px;max-width:480px}
+
+/* hand context menu */
+#ctxmenu{position:fixed;background:var(--panel);border:1px solid var(--line);border-radius:4px;z-index:55;display:none;flex-direction:column;min-width:200px;box-shadow:0 6px 30px #000c;overflow:hidden}
+#ctxmenu button{background:none;color:var(--cream);text-align:left;padding:9px 14px;font-size:12.5px;border-bottom:1px solid #2a2e36}
+#ctxmenu button:hover:not(:disabled){background:#2c313b}
+
+#hint{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:#000c;border:1px solid var(--geel);color:var(--geel);padding:7px 18px;border-radius:4px;font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1px;font-size:14px;display:none;z-index:10}
+#hint.show{display:block}
+#hint button{background:none;border:none;color:#fff;margin-left:10px;font-size:13px;text-decoration:underline}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:#3a3f48;border-radius:4px}
+</style>
+</head>
+<body>
+
+<!-- ══ SETUP ══ -->
+<div id="setup">
+  <div class="setupwrap">
+  <div class="setupbox">
+    <h1>PLANET <span>UNDER</span> PRESSURE</h1>
+    <div class="sub">Coöperatief klimaatcrisis-strategiespel · 2–4 spelers · hotseat</div>
+    <h3>AANTAL SPELERS</h3>
+    <div class="segment" id="segPlayers">
+      <button data-v="2">2 spelers</button>
+      <button data-v="3" class="sel">3 spelers</button>
+      <button data-v="4">4 spelers</button>
+    </div>
+    <div class="nameinputs" id="nameInputs"></div>
+    <h3>MOEILIJKHEID</h3>
+    <div class="segment" id="segDiff">
+      <button data-v="4">Intro · 4 escalaties</button>
+      <button data-v="5" class="sel">Standaard · 5</button>
+      <button data-v="6">Expert · 6</button>
+    </div>
+    <div class="crisisrow">
+      <div class="ct" style="--c:#C0392B">🔴 Klimaatimpact</div>
+      <div class="ct" style="--c:#2E7D32">🟢 Ecologische druk</div>
+      <div class="ct" style="--c:#555">⚫ Vervuiling</div>
+      <div class="ct" style="--c:#D4A017">🟡 Voedsel & land</div>
+    </div>
+    <button id="btnstart">▶ Start het spel</button>
+  </div>
+  <div id="setupinfo"></div>
+  </div>
+</div>
+
+<!-- ══ TOPBAR ══ -->
+<div id="topbar">
+  <h1>PLANET <span>UNDER</span> PRESSURE</h1>
+  <div class="topinfo">
+    <div class="chip" id="tRound">Ronde 1</div>
+    <div class="chip" id="tPhase">Fase: Acties</div>
+  </div>
+  <div class="spacer"></div>
+  <button class="tbtn" id="btnRules">Regels</button>
+  <button class="tbtn" id="btnNew">Nieuw spel</button>
+</div>
+
+<!-- ══ MAIN ══ -->
+<div id="main">
+  <div id="boardwrap">
+    <div id="hint"><span id="hinttext"></span><button id="hintcancel">annuleer</button></div>
+    <div id="zoomctl"><button id="zin" title="Zoom in">+</button><button id="zout" title="Zoom uit">−</button><button id="zreset" title="Volledige kaart">⊡</button></div>
+    <div id="legend">
+      <div class="lg-title">CRISISBLOKJES</div>
+      <div><span class="sw" style="background:#E0584C"></span>Klimaatimpact — hitte, storm, overstroming</div>
+      <div><span class="sw" style="background:#4CAF50"></span>Ecologische druk — ontbossing, biodiversiteit</div>
+      <div><span class="sw" style="background:#546E7A"></span>Vervuiling — fossiel, industrie, plastic</div>
+      <div><span class="sw" style="background:#F2C12E"></span>Voedsel & land — oogst, water, prijzen</div>
+      <div class="lg-note">stapel van 3 (witte rand) = kritiek → 4e blokje = uitbraak</div>
+    </div>
+    <div id="maphint">scroll = zoomen · slepen = verschuiven · rechtsklik = uitleg</div>
+    <div id="ptoast"></div>
+    <svg id="board" viewBox="0 0 1000 520" preserveAspectRatio="xMidYMid meet"></svg>
+  </div>
+  <div id="sidebar">
+    <div class="sb-box" id="tracksBox"></div>
+    <div class="sb-box"><h3>Doorbraken (cures)</h3><div id="curesBox"></div></div>
+    <div class="sb-box"><h3>Voorraad & decks</h3><div id="suppliesBox"></div></div>
+    <div class="sb-box"><h3>Actieve legacy-effecten</h3><div id="legacyBox"></div></div>
+    <div class="sb-box"><h3>Logboek</h3><div id="log"></div></div>
+  </div>
+</div>
+
+<!-- ══ BOTTOM ══ -->
+<div id="bottom">
+  <div id="playerinfo"></div>
+  <div id="hand"></div>
+  <div id="actions"></div>
+</div>
+
+<div id="ctxmenu"></div>
+<div id="modalroot"><div class="modal"><div class="mhead" id="mhead"></div><div class="mbody" id="mbody"></div><div class="mfoot" id="mfoot"></div></div></div>
+<div id="endoverlay"><div class="ebox"><h1 id="endtitle"></h1><p id="endreason"></p><button class="mbtn primary" onclick="location.reload()">Opnieuw spelen</button></div></div>
+
+<script>
+'use strict';
+/* ════════════════════════════════════════════════════════════════
+   PLANET UNDER PRESSURE — digitale prototype-versie
+   Gebaseerd op: Design Bible Pandemic Core V1, Prototype Build Steps 1–9,
+   Complete Kaartenset v1 (Pressure / Surge / Escalation / Events / Legacy).
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── STATISCHE DATA ───────────────────────────────────────────── */
+const TYPES = {
+  ROOD:  { color:'#C0392B', label:'Klimaatimpact',    emoji:'🔴' },
+  GROEN: { color:'#2E7D32', label:'Ecologische druk', emoji:'🟢' },
+  ZWART: { color:'#4a4a4a', label:'Vervuiling',       emoji:'⚫' },
+  GEEL:  { color:'#D4A017', label:'Voedsel & land',   emoji:'🟡' },
+};
+const TYPEKEYS = ['ROOD','GROEN','ZWART','GEEL'];
+
+/* ── ICONEN (Lucide, MIT — https://lucide.dev) ───────────────── */
+const IC = {
+  nav:'<path d="M3 11 22 2l-9 19-2-8-8-2z"/>',
+  repeat:'<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>',
+  minus:'<circle cx="12" cy="12" r="10"/><path d="M8 12h8"/>',
+  hammer:'<path d="m15 12-8.373 8.373a1 1 0 1 1-3-3L12 9"/><path d="m18 15 4-4"/><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172V7l-2.26-2.26a6 6 0 0 0-4.202-1.756L9 2.96l.92.82A6.18 6.18 0 0 1 12 8.4V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>',
+  swap:'<path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>',
+  bulb:'<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>',
+  mega:'<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>',
+  eye:'<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>',
+  globe:'<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
+  next:'<path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/>',
+  wrench:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+  x:'<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
+  flask:'<path d="M14 2v6a2 2 0 0 0 .245.96l5.51 10.08A2 2 0 0 1 18 22H6a2 2 0 0 1-1.755-2.96l5.51-10.08A2 2 0 0 0 10 8V2"/><path d="M6.453 15h11.094"/><path d="M8.5 2h7"/>',
+  zap:'<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>',
+  leaf:'<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>',
+  shield:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+  landmark:'<path d="M10 18v-7"/><path d="M11.12 2.198a2 2 0 0 1 1.76.006l7.866 3.847c.476.233.31.949-.22.949H3.474c-.53 0-.695-.716-.22-.949z"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="M3 22h18"/><path d="M6 18v-7"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  alert:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 20h16a2 2 0 0 0 1.73-2Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  flame:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+  coins:'<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/>',
+  smile:'<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01"/><path d="M15 9h.01"/>',
+  layers:'<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>',
+  pin:'<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
+  book:'<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>',
+  rotate:'<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+};
+function ic(name,size=15){return `<svg class="ic" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[name]||''}</svg>`;}
+
+/* Posities: echte lat/lon, equirectangulaire projectie (1000×520, 85°N–60°Z).
+   lp = labelpositie: b(eneden, standaard) / a(boven) / l(inks) / r(echts) */
+const CITIES = [
+  { name:'Anchorage',    region:'Noord-Amerika',        type:'ROOD',  x:84,  y:85,  conns:['Vancouver','Tokio'] },
+  { name:'Vancouver',    region:'Noord-Amerika',        type:'GROEN', x:158, y:128, conns:['New York','Tokio','Anchorage'] },
+  { name:'New York',     region:'Noord-Amerika',        type:'ROOD',  x:294, y:159, conns:['Vancouver','Houston','Amsterdam','Mexico-Stad'] },
+  { name:'Houston',      region:'Noord-Amerika',        type:'ZWART', x:235, y:198, conns:['New York','Mexico-Stad','São Paulo'] },
+  { name:'Mexico-Stad',  region:'Latijns-Amerika',      type:'ZWART', x:225, y:235, conns:['Houston','New York','Manaus'] },
+  { name:'Manaus',       region:'Latijns-Amerika',      type:'GROEN', x:333, y:316, conns:['Mexico-Stad','São Paulo','Lagos'] },
+  { name:'São Paulo',    region:'Latijns-Amerika',      type:'GROEN', x:370, y:389, conns:['Manaus','Houston','Lagos','Johannesburg'] },
+  { name:'Amsterdam',    region:'Europa',               type:'GEEL',  x:514, y:117, lp:'a', conns:['New York','Warschau','Casablanca'] },
+  { name:'Warschau',     region:'Europa',               type:'ZWART', x:558, y:118, lp:'r', conns:['Amsterdam','Istanbul','Riyad'] },
+  { name:'Istanbul',     region:'Europa',               type:'ROOD',  x:580, y:158, lp:'l', conns:['Warschau','Caïro','Riyad','Mumbai'] },
+  { name:'Casablanca',   region:'N-Afrika & M-Oosten',  type:'ZWART', x:479, y:184, conns:['Amsterdam','Caïro','Lagos'] },
+  { name:'Caïro',        region:'N-Afrika & M-Oosten',  type:'ROOD',  x:587, y:197, conns:['Casablanca','Istanbul','Riyad','Nairobi','Addis Abeba'] },
+  { name:'Riyad',        region:'N-Afrika & M-Oosten',  type:'ZWART', x:630, y:216, lp:'r', conns:['Caïro','Istanbul','Delhi','Mumbai','Addis Abeba','Warschau'] },
+  { name:'Lagos',        region:'Sub-Sahara Afrika',    type:'ZWART', x:509, y:281, conns:['Casablanca','Manaus','Nairobi','Johannesburg','São Paulo'] },
+  { name:'Addis Abeba',  region:'Sub-Sahara Afrika',    type:'GEEL',  x:608, y:272, lp:'r', conns:['Caïro','Riyad','Nairobi'] },
+  { name:'Nairobi',      region:'Sub-Sahara Afrika',    type:'GROEN', x:602, y:309, lp:'l', conns:['Lagos','Caïro','Mumbai','Johannesburg','Addis Abeba'] },
+  { name:'Johannesburg', region:'Sub-Sahara Afrika',    type:'GROEN', x:578, y:399, conns:['Lagos','Nairobi','São Paulo'] },
+  { name:'Delhi',        region:'Zuid-Azië',            type:'ROOD',  x:714, y:202, lp:'a', conns:['Riyad','Mumbai','Dhaka','Shanghai'] },
+  { name:'Mumbai',       region:'Zuid-Azië',            type:'GEEL',  x:702, y:236, lp:'l', conns:['Riyad','Delhi','Nairobi','Singapore','Istanbul'] },
+  { name:'Dhaka',        region:'Zuid-Azië',            type:'ROOD',  x:751, y:219, lp:'r', conns:['Delhi','Singapore','Jakarta','Bangkok'] },
+  { name:'Bangkok',      region:'ZO-Azië & Oceanië',    type:'GEEL',  x:779, y:256, lp:'l', conns:['Dhaka','Singapore','Shanghai'] },
+  { name:'Shanghai',     region:'Oost-Azië',            type:'ZWART', x:837, y:193, lp:'b', conns:['Delhi','Seoul','Singapore','Bangkok','Manila'] },
+  { name:'Seoul',        region:'Oost-Azië',            type:'ZWART', x:853, y:170, lp:'a', conns:['Shanghai','Tokio'] },
+  { name:'Tokio',        region:'Oost-Azië',            type:'ROOD',  x:888, y:177, lp:'r', conns:['Seoul','Vancouver','Sydney','Anchorage'] },
+  { name:'Manila',       region:'ZO-Azië & Oceanië',    type:'GROEN', x:836, y:253, lp:'r', conns:['Shanghai','Singapore','Sydney'] },
+  { name:'Singapore',    region:'ZO-Azië & Oceanië',    type:'GROEN', x:788, y:300, lp:'l', conns:['Mumbai','Dhaka','Shanghai','Jakarta','Sydney','Bangkok','Manila'] },
+  { name:'Jakarta',      region:'ZO-Azië & Oceanië',    type:'GROEN', x:797, y:327, lp:'b', conns:['Singapore','Dhaka','Sydney'] },
+  { name:'Sydney',       region:'ZO-Azië & Oceanië',    type:'ROOD',  x:920, y:426, conns:['Jakarta','Singapore','Tokio','Manila'] },
+];
+/* Heldere bordkleuren voor nodes en cubes (Pandemic-stijl) */
+const NODEC = {ROOD:'#E0584C', GROEN:'#4CAF50', ZWART:'#546E7A', GEEL:'#F2C12E'};
+/* Landmassa: Natural Earth 110m (publiek domein), equirectangulair geprojecteerd */
+const LAND_PATH='M312,498 315,500 319,501 318,503 315,503 314,502 313,503 311,504 308,504 306,503 303,502 299,500 296,498 293,494 295,495 299,497 302,499 304,497 305,495 307,493 309,494 310,495 312,498ZM337,488 340,490 339,491 335,492 334,491 331,492 330,491 333,489 336,490 337,488ZM695,483 691,483 691,481 691,480 691,479 693,480 696,481 695,483ZM904,451 907,452 908,452 910,451 912,451 912,456 911,457 911,460 910,459 908,461 907,461 906,461 904,458 904,456 902,452 902,451 904,451ZM981,452 981,453 983,452 984,453 984,455 983,456 981,459 980,460 981,462 979,462 976,463 976,466 974,469 972,471 970,472 968,472 966,471 963,471 963,469 964,467 968,463 969,462 971,461 974,459 975,457 977,455 978,454 978,452 980,450 981,452ZM985,434 987,438 987,436 988,437 989,440 991,441 993,441 994,440 996,440 995,443 994,445 992,445 991,446 992,448 991,449 990,450 989,453 987,454 986,453 985,453 987,450 986,448 983,447 983,445 985,444 985,441 985,439 984,436 983,434 981,431 980,429 981,428 982,430 984,431 985,434ZM964,384 963,385 962,384 960,383 958,381 956,378 956,377 957,377 958,378 960,379 960,380 963,383 964,384ZM995,367 996,368 996,370 994,370 993,370 992,368 994,367 995,368 995,367ZM998,365 996,366 996,364 997,364 998,364 1000,362 1000,364 998,365ZM964,358 965,361 964,361 963,361 963,360 963,357 964,358ZM639,353 639,358 640,359 640,361 639,362 639,360 638,361 639,364 638,365 637,366 637,369 636,373 635,378 633,385 632,390 631,394 629,395 626,397 625,396 622,394 622,393 621,389 620,387 620,384 621,381 622,381 622,380 623,377 624,375 623,373 622,371 622,367 623,365 623,363 625,363 626,362 627,361 629,361 630,359 633,357 633,355 633,354 634,354 636,352 636,350 637,348 638,350 638,351 639,353ZM899,354 900,357 902,356 902,357 904,359 904,360 904,363 905,365 906,369 906,370 907,373 910,375 912,376 913,378 913,379 915,381 916,385 917,384 918,386 919,385 919,389 921,391 922,393 925,395 925,398 925,400 925,403 927,406 926,409 926,410 925,414 925,416 925,418 923,422 921,423 920,426 919,428 919,431 918,433 917,435 917,438 917,439 915,440 912,440 909,442 908,443 906,445 904,443 902,443 903,441 901,441 899,444 897,443 895,442 893,442 891,441 889,439 888,436 888,434 886,433 884,433 885,431 884,428 883,431 880,431 882,429 882,427 883,425 883,423 881,426 879,427 878,430 876,428 876,427 874,424 872,423 873,422 869,420 867,420 865,418 860,418 856,419 853,421 850,420 847,422 845,423 845,425 843,426 841,426 839,427 837,426 835,427 833,427 831,429 831,428 829,429 828,431 826,430 824,430 821,428 820,427 820,425 821,425 821,424 821,423 822,420 821,418 820,415 819,413 820,410 818,408 818,407 817,406 817,403 815,400 815,398 816,400 815,397 816,398 817,399 817,397 816,394 816,393 815,392 815,390 816,389 816,388 816,385 817,383 817,386 818,383 821,382 822,380 824,379 825,379 826,379 828,378 830,377 831,377 831,376 833,376 836,375 837,374 838,372 840,370 840,369 840,367 842,364 843,367 844,366 843,364 844,363 845,363 845,361 847,359 848,357 849,357 849,356 850,356 850,355 852,355 853,354 855,356 857,358 858,358 860,359 859,357 861,354 862,353 862,352 863,350 865,349 866,349 868,348 868,346 866,345 868,345 869,346 871,347 873,348 874,348 876,349 877,348 878,348 879,347 880,349 880,351 879,352 878,353 878,354 877,356 876,358 876,359 879,361 881,362 882,363 884,365 885,365 886,366 887,367 889,368 891,367 892,365 892,364 893,362 894,359 893,357 893,356 893,354 893,351 894,351 894,349 894,347 895,345 895,344 896,343 897,345 897,347 898,348 898,349 899,351 899,353 899,354ZM835,342 834,342 830,339 833,338 835,339 835,341 835,342ZM947,340 946,340 944,340 943,339 944,338 945,339 946,339 947,340ZM949,339 949,340 947,337 946,335 947,335 948,338 949,339ZM846,341 843,342 843,340 844,338 847,337 847,336 850,335 852,335 853,334 854,335 853,336 850,337 847,339 846,341ZM828,334 829,335 830,335 831,336 828,337 826,337 824,337 825,335 827,335 828,334ZM841,334 841,336 837,337 833,336 833,335 835,334 837,335 839,335 841,334ZM944,335 942,334 941,333 939,331 940,331 941,332 943,334 944,335ZM802,329 807,329 808,328 813,330 814,332 818,333 821,335 818,336 815,335 813,335 810,335 807,334 804,333 802,332 801,333 796,331 795,330 793,329 795,326 798,326 800,328 801,328 802,329ZM874,327 873,330 873,327 873,326 874,324 874,325 874,327ZM933,329 932,330 931,328 930,326 929,323 930,323 930,324 931,325 932,327 933,328 933,329ZM922,324 921,325 920,326 919,327 917,327 916,327 914,326 912,325 912,324 915,325 916,325 917,323 917,325 919,324 920,323 921,322 921,320 923,320 923,322 922,324ZM853,317 852,318 851,318 850,316 853,316 853,317ZM862,316 863,319 861,317 859,317 857,317 855,317 856,315 859,315 862,316ZM925,321 925,322 924,320 923,318 922,317 921,316 919,315 919,314 921,315 922,316 923,316 924,318 925,319 925,321ZM873,309 873,315 876,317 879,313 882,311 884,311 887,312 889,313 892,314 896,317 902,319 904,321 905,322 906,324 910,327 911,329 908,329 909,331 911,334 913,337 915,337 915,339 917,340 916,340 919,342 919,343 917,343 916,342 914,342 911,341 909,339 907,337 906,334 902,332 900,333 898,334 898,337 896,338 895,338 892,338 889,335 886,334 886,335 882,335 883,332 885,331 884,327 883,324 878,321 875,321 871,318 870,319 869,320 869,318 869,317 867,315 870,314 872,314 871,313 867,313 866,311 864,310 863,308 866,307 868,306 872,308 873,309ZM848,300 846,303 844,304 841,303 836,303 834,304 833,307 836,310 837,308 843,307 842,309 841,308 840,310 838,312 840,316 840,317 842,322 842,324 841,325 840,324 841,321 838,322 837,321 838,320 836,318 836,314 834,315 834,320 835,325 833,325 832,324 832,321 832,317 831,317 830,315 831,313 831,310 833,304 833,303 836,300 838,301 841,302 845,302 847,299 848,300ZM857,301 857,304 856,304 855,306 857,308 856,308 855,306 854,301 854,298 855,297 856,299 857,299 857,301ZM794,326 791,326 789,323 785,320 784,318 782,315 780,312 778,307 776,304 775,301 774,298 771,296 770,293 768,291 765,287 765,285 766,285 771,286 773,290 775,292 777,293 780,297 782,297 785,300 786,303 788,304 787,307 789,309 790,309 790,311 791,313 793,314 795,316 794,320 794,326ZM827,298 831,302 827,302 826,304 826,308 824,310 824,314 823,319 822,318 819,320 818,317 816,317 815,316 811,317 810,316 808,316 806,315 806,311 804,310 803,306 803,303 803,300 805,298 807,299 809,298 809,295 811,294 814,294 816,291 817,289 818,287 821,285 823,283 824,280 825,280 827,282 827,283 829,284 831,285 831,287 829,287 829,289 827,290 826,293 828,297 827,298ZM851,275 851,277 851,279 851,282 850,279 848,280 849,283 848,285 845,283 844,280 845,278 843,277 842,278 841,278 839,280 839,279 840,276 842,275 843,274 844,275 846,274 847,273 849,273 848,270 851,272 851,273 851,275ZM726,283 723,283 722,281 721,275 723,270 725,272 726,274 727,278 727,282 726,283ZM331,269 328,269 329,268 329,266 330,266 331,266 331,269ZM844,268 843,269 843,271 842,272 840,270 841,269 841,268 842,266 843,266 843,268 845,265 844,268ZM829,271 825,275 827,272 829,270 831,268 832,264 832,267 831,269 829,271ZM839,262 840,263 842,263 842,265 841,266 839,267 839,266 839,264 839,262ZM849,261 849,265 847,264 847,265 848,268 847,268 847,266 846,266 845,264 847,264 847,263 845,260 848,260 849,261ZM838,258 837,261 836,259 834,257 837,257 838,258ZM837,238 839,239 840,239 839,241 840,244 840,247 838,248 838,251 838,253 840,254 841,253 844,255 844,257 845,258 845,260 842,258 841,256 841,258 839,255 836,256 835,255 835,254 836,253 835,252 835,253 834,251 833,250 833,246 834,247 834,242 835,238 837,238ZM318,239 317,240 315,240 313,240 313,239 314,238 316,238 317,239 318,239ZM286,241 284,241 282,239 283,239 284,238 285,239 286,239 288,240 288,241 286,241ZM298,234 301,234 303,234 305,234 306,234 306,236 308,236 308,237 309,237 310,238 309,240 308,239 307,239 306,239 305,239 304,240 304,239 303,239 302,242 301,241 301,240 299,240 298,240 296,239 295,240 293,239 293,238 296,238 298,239 299,238 298,236 298,235 296,234 297,233 298,234ZM806,238 804,240 802,238 802,235 803,234 806,233 808,233 808,234 807,236 806,238ZM68,236 68,237 67,236 67,235 66,234 67,234 67,233 67,232 68,233 69,233 69,234 70,235 69,236 68,236ZM279,223 280,224 282,224 283,225 286,227 287,229 288,229 290,229 290,230 292,231 294,232 294,233 292,233 290,234 288,233 284,234 286,232 285,231 283,230 282,229 281,227 280,228 277,227 276,226 273,225 272,225 273,224 270,223 268,225 267,225 267,226 265,227 264,226 265,225 266,224 267,223 269,222 271,222 274,222 276,222 279,223ZM285,220 284,220 283,218 282,217 283,214 284,215 285,218 285,220ZM837,223 835,226 834,223 834,220 835,217 837,214 839,215 838,217 837,223ZM284,210 281,210 281,209 282,208 284,209 284,210ZM286,209 286,212 285,212 285,210 284,208 286,209ZM874,182 874,184 873,186 872,185 870,185 869,188 868,187 868,185 869,183 871,183 872,182 874,182ZM596,177 594,178 594,179 592,181 590,180 590,179 591,179 592,178 594,178 596,177ZM566,177 567,178 570,178 572,178 572,179 573,178 573,179 569,180 569,179 565,178 566,177ZM543,168 542,171 543,172 542,174 540,172 538,172 535,170 535,168 538,168 541,168 543,168ZM526,157 527,160 527,164 526,164 524,165 523,164 523,160 523,158 524,158 526,157ZM892,172 891,174 891,176 890,179 886,181 881,181 877,185 875,183 875,181 870,182 867,183 864,183 867,186 865,192 863,194 862,192 862,189 861,188 859,185 862,184 864,182 866,180 868,178 874,177 877,177 880,171 882,173 886,169 887,168 889,163 889,159 890,157 893,156 894,161 894,164 892,168 892,172ZM527,154 526,156 524,156 524,153 524,152 526,151 527,154ZM900,146 902,147 904,146 904,150 900,151 898,154 893,152 892,156 889,156 888,152 890,149 893,149 894,144 894,141 898,145 900,146ZM323,138 325,138 328,138 326,140 325,140 322,138 321,137 322,136 323,138ZM328,129 327,129 323,128 321,126 322,126 325,127 328,128 328,129ZM157,131 156,131 151,130 150,128 148,127 147,126 144,126 143,124 143,123 146,124 148,124 151,124 152,126 153,127 156,129 157,131ZM344,123 342,126 344,125 346,126 345,127 347,128 349,127 351,128 351,131 353,130 353,132 354,134 353,138 351,138 350,137 350,134 349,134 346,137 344,137 346,135 344,134 341,134 335,134 335,133 337,132 335,131 338,129 341,123 342,121 345,120 346,120 346,121 344,123ZM131,111 134,111 133,115 136,118 135,118 133,116 132,114 130,113 130,112 130,111 131,111ZM899,123 902,129 898,128 896,133 899,137 899,139 897,137 895,140 894,137 894,133 894,130 895,127 895,122 893,119 894,114 896,112 895,110 896,110 897,112 898,116 898,119 899,123ZM481,117 476,120 472,119 475,115 473,112 477,109 479,107 481,107 484,109 483,112 483,114 481,117ZM535,105 534,108 531,106 530,105 534,104 535,105ZM75,100 72,101 71,100 70,99 73,97 74,97 76,97 77,98 75,100ZM492,95 489,98 492,98 495,98 494,101 491,104 494,104 497,109 499,110 501,114 501,115 505,116 504,118 503,119 504,121 502,123 498,123 493,124 492,123 490,125 487,124 485,126 484,125 488,121 491,120 486,120 485,118 488,117 487,115 487,113 491,113 492,111 490,109 487,108 486,107 487,106 486,105 484,106 484,103 483,101 484,97 486,95 488,95 492,95ZM40,90 38,91 37,90 35,89 38,88 40,89 40,90ZM280,82 279,84 278,83 277,82 278,81 279,81 280,82ZM273,80 269,82 267,82 267,81 269,79 273,79 273,80ZM23,76 25,77 26,76 29,77 31,78 29,79 27,78 26,78 23,78 23,77 23,76ZM263,69 264,71 265,70 267,71 270,73 273,74 273,75 276,75 277,76 275,77 271,77 269,75 266,77 262,79 261,77 258,77 260,75 260,72 261,69 263,69ZM460,67 459,69 462,71 459,74 451,76 448,77 445,77 437,75 440,74 433,72 438,71 438,70 432,70 434,67 439,67 443,69 447,67 451,68 455,66 460,67ZM289,64 286,64 285,62 287,60 289,60 291,61 291,62 291,63 289,64ZM14,66 16,67 15,64 23,65 28,68 25,70 21,70 21,74 20,74 17,74 15,73 11,72 11,70 8,70 5,70 3,69 4,68 0,69 2,70 0,72 0,58 7,60 14,64 14,66ZM234,57 233,58 229,57 227,58 223,56 225,55 227,53 230,54 232,55 233,56 234,57ZM1000,51 997,51 996,50 1000,48 1000,51ZM4,51 0,51 0,48 3,48 7,49 6,50 4,51ZM248,56 248,59 252,56 256,59 255,61 257,64 260,61 262,58 262,54 266,54 270,55 274,57 274,59 272,60 274,62 274,64 268,67 265,67 262,66 261,68 258,71 257,73 254,75 250,75 248,77 248,79 245,79 241,82 238,86 237,89 237,93 241,94 242,97 244,100 248,99 253,101 255,102 257,104 261,105 264,107 268,107 271,107 271,110 272,114 274,118 278,121 280,120 282,116 280,111 278,109 283,107 286,105 287,102 287,100 285,97 282,94 285,90 284,87 283,81 285,81 290,81 293,82 295,81 297,82 301,84 302,86 307,86 307,89 308,93 310,94 312,96 316,94 319,90 321,88 323,92 326,96 329,101 328,103 332,105 335,107 339,108 341,109 342,112 344,112 345,114 345,118 343,119 341,120 337,122 333,125 329,125 323,124 318,124 316,125 313,127 310,129 306,134 302,137 305,136 309,132 315,129 319,128 322,130 319,132 320,136 321,139 325,141 329,140 332,136 332,139 334,140 330,142 324,145 322,146 318,149 316,148 316,145 321,142 317,143 314,143 314,144 311,146 308,147 305,148 304,151 303,151 303,153 304,155 305,155 305,154 306,154 306,156 304,156 302,156 300,157 299,157 298,157 295,158 299,157 300,158 296,159 294,159 295,159 294,160 295,160 294,162 292,165 292,164 291,164 290,163 291,165 291,166 292,167 291,168 289,171 290,169 288,167 288,164 287,166 288,168 286,168 288,169 288,172 289,173 289,174 290,177 288,180 285,181 283,183 282,183 280,185 280,186 277,188 275,190 274,192 274,195 274,197 275,200 276,203 276,204 278,208 278,211 277,212 277,214 276,215 275,214 274,213 273,212 272,209 270,206 270,205 270,202 270,200 267,197 266,197 264,199 263,198 262,197 260,196 257,196 254,196 252,196 251,197 252,198 252,199 252,200 251,200 250,200 248,200 245,198 243,199 241,198 239,198 237,199 234,202 232,203 230,205 230,207 229,209 230,211 230,212 229,215 229,218 228,223 228,224 229,226 229,228 230,231 232,233 233,236 234,237 237,238 238,240 240,239 242,238 244,238 246,237 248,236 249,234 249,231 249,230 251,229 254,228 257,228 258,228 259,228 259,230 257,232 257,234 257,235 257,237 256,239 255,238 255,239 255,240 255,242 255,243 255,244 255,246 254,246 254,247 253,248 254,249 254,248 255,248 255,249 256,248 257,248 259,248 260,248 261,248 261,247 262,248 263,248 264,247 265,248 266,248 266,249 267,250 268,250 269,251 269,252 269,254 268,255 268,256 268,258 268,259 268,260 268,261 267,262 268,263 267,264 267,265 268,266 268,268 269,269 271,271 272,272 272,273 273,273 273,272 274,273 275,273 276,272 278,271 279,270 280,271 282,271 283,272 284,273 285,274 287,274 289,271 290,271 290,270 290,267 292,265 294,265 294,264 296,265 298,263 299,262 301,260 302,260 302,261 302,263 300,264 301,265 301,267 300,269 301,272 302,272 303,269 302,268 302,265 305,264 305,262 306,261 307,264 309,264 310,266 311,267 313,267 316,267 318,268 320,269 321,268 321,267 325,266 328,266 326,267 327,269 329,269 331,271 331,274 333,274 334,275 336,276 338,278 338,280 339,280 340,282 341,283 345,284 345,283 347,283 350,284 351,285 353,285 356,288 357,290 358,292 360,298 361,299 361,301 359,304 360,305 365,306 365,309 367,307 371,308 375,310 377,312 376,314 379,313 385,315 389,315 393,318 397,322 399,323 401,323 402,324 403,329 404,331 402,337 401,339 397,344 395,348 393,352 392,354 392,361 391,367 391,369 390,370 390,375 387,380 386,383 384,385 383,387 380,387 376,389 374,390 371,391 368,394 365,398 365,400 365,402 365,406 364,408 362,410 359,416 357,419 355,420 354,424 352,426 351,428 347,430 345,429 344,430 341,428 339,428 338,426 338,428 341,431 341,434 342,435 342,437 340,442 335,444 330,444 327,444 327,446 327,449 327,451 326,452 323,452 320,451 319,452 320,456 321,457 323,456 324,457 321,459 319,461 319,464 318,466 315,466 313,468 312,471 315,474 318,474 317,477 313,479 312,484 309,485 308,487 309,490 311,493 310,492 307,492 306,493 303,495 303,498 302,498 298,497 295,494 292,492 291,490 292,488 290,485 290,479 291,476 294,473 290,472 293,469 293,463 297,464 298,457 296,456 295,460 294,460 294,455 295,448 297,446 296,442 296,438 297,438 298,432 300,426 302,421 301,416 302,413 301,408 303,404 304,397 304,390 305,382 305,376 305,371 302,369 301,367 296,363 291,360 289,357 288,354 288,353 286,349 283,342 280,335 279,333 278,331 276,328 274,327 275,325 274,322 275,319 277,317 278,314 278,313 277,314 275,313 276,312 275,309 276,308 277,306 278,304 278,302 279,301 281,300 281,299 282,298 281,297 282,295 284,295 285,293 286,291 285,290 285,288 285,285 285,284 285,281 284,279 283,278 282,276 283,275 282,275 282,274 280,273 279,273 278,274 277,275 276,276 278,278 277,278 277,279 275,279 275,277 274,277 273,276 272,276 271,275 270,275 270,276 270,275 268,275 267,274 268,273 268,272 267,272 266,271 265,270 265,269 264,269 264,270 264,271 263,270 262,269 262,268 262,267 262,266 261,266 262,265 261,264 260,262 259,261 258,260 256,259 257,258 257,259 257,258 257,257 256,257 256,258 254,258 253,257 252,257 251,256 250,256 248,255 247,255 245,254 244,253 241,249 239,248 237,247 235,247 233,248 232,249 230,248 228,247 225,245 223,245 220,243 218,242 217,241 215,240 212,239 211,238 208,236 207,233 206,232 207,231 207,230 208,229 208,228 207,226 206,225 205,223 203,220 200,217 199,215 196,213 196,212 196,210 195,209 193,207 193,205 191,205 190,203 188,201 188,200 187,197 186,194 186,193 184,192 183,192 181,191 181,192 181,194 181,197 182,198 184,201 185,201 185,202 186,203 187,205 188,206 188,207 190,209 191,213 192,214 192,216 193,218 194,218 195,219 196,221 196,222 195,223 194,223 194,221 192,219 190,217 188,216 188,213 188,212 187,210 185,209 184,209 184,208 182,207 180,205 181,205 182,205 183,204 183,202 181,200 179,199 178,197 177,194 176,191 175,188 174,186 172,184 171,184 171,183 169,183 168,182 166,181 165,181 165,179 162,175 160,170 160,169 158,168 156,165 156,162 154,160 155,157 155,154 154,151 155,148 156,142 155,137 154,134 154,132 154,131 158,133 159,136 160,135 160,132 159,129 158,129 153,126 151,124 146,123 144,119 145,117 141,116 141,113 137,110 137,108 136,107 133,106 133,103 129,100 128,96 125,96 120,96 117,95 111,91 109,91 104,89 100,90 95,88 91,86 88,87 89,90 87,90 84,91 82,92 79,93 78,91 79,87 82,86 82,85 78,87 76,89 72,92 74,94 72,96 69,98 66,99 65,100 61,102 60,104 57,106 55,105 52,106 49,107 47,109 42,110 42,109 45,107 48,106 51,104 54,104 55,103 59,100 60,100 62,98 62,96 64,94 61,95 60,94 58,95 56,93 56,95 55,93 52,94 50,94 50,92 50,91 49,90 45,90 43,89 41,88 41,86 39,84 40,82 42,80 43,78 45,78 47,79 49,77 51,77 53,76 53,75 51,74 53,72 52,73 49,73 48,74 46,73 42,74 38,73 37,71 33,69 37,68 43,66 45,66 45,68 51,68 49,66 45,64 43,62 41,61 37,60 38,58 43,58 47,56 47,54 50,53 53,52 58,51 61,51 65,49 69,50 71,51 72,51 77,51 77,52 81,52 84,52 90,53 95,53 97,54 101,53 105,54 108,55 114,56 118,57 121,58 123,56 127,55 131,56 135,54 139,53 141,55 143,54 144,52 146,52 151,56 154,53 155,56 158,55 159,54 163,55 167,56 173,57 177,58 180,58 184,60 180,61 185,62 192,62 195,61 198,63 201,61 198,60 200,59 203,58 205,58 207,59 210,61 213,61 218,62 222,62 227,62 226,60 229,59 233,60 233,63 235,61 237,61 238,57 235,55 232,53 232,50 236,47 239,47 242,49 246,53 243,55 248,56ZM183,43 181,44 188,43 192,45 195,43 197,44 199,48 201,46 199,43 201,42 204,43 207,44 209,48 210,50 214,52 219,54 219,55 215,56 216,57 215,58 210,58 206,57 202,57 197,58 189,59 185,59 184,57 180,56 177,57 174,54 176,54 180,53 184,53 188,52 182,52 176,52 172,52 171,51 177,49 173,49 168,48 171,46 173,44 180,42 183,43ZM210,42 207,44 203,41 204,41 208,41 210,42ZM288,43 288,44 285,44 282,43 279,44 278,44 275,42 275,41 277,40 283,41 288,43ZM260,42 262,45 264,42 271,40 276,44 276,46 281,45 284,44 290,46 294,47 294,49 299,48 302,50 309,52 311,53 314,57 309,58 315,61 320,62 324,65 328,65 327,68 322,72 319,70 315,67 311,67 311,69 314,71 317,73 319,74 320,77 319,80 316,79 309,76 313,79 316,81 316,83 309,81 303,79 299,77 300,76 296,75 292,73 292,74 284,74 282,73 284,71 289,71 295,70 294,69 295,67 298,64 297,62 296,61 292,59 286,58 288,57 285,55 283,54 281,53 279,54 274,55 264,54 258,53 254,52 251,51 254,49 250,49 249,46 252,43 254,41 262,40 260,42ZM221,40 225,41 230,40 230,41 228,43 232,45 231,48 227,49 224,49 222,48 215,45 215,44 221,44 218,42 221,40ZM899,42 895,42 889,42 891,40 895,40 899,41 899,42ZM241,44 238,47 235,46 233,43 233,41 235,40 237,39 243,39 249,40 244,43 241,44ZM165,49 158,51 157,49 150,47 151,46 153,43 156,41 153,38 162,38 166,39 173,39 176,40 179,41 176,42 169,45 165,47 165,49ZM919,36 915,37 911,37 906,35 907,34 912,35 919,36ZM240,36 238,37 234,37 231,36 233,35 237,34 239,35 240,36ZM903,34 901,37 891,36 886,37 880,35 882,32 886,32 893,32 903,34ZM226,30 229,31 229,33 227,36 223,36 220,36 220,34 215,34 215,31 218,31 222,30 226,30ZM199,32 201,33 203,32 206,32 206,34 205,36 195,36 188,38 184,38 184,37 189,35 177,36 173,35 177,32 179,31 187,32 192,34 197,34 193,31 196,29 198,30 199,32ZM660,51 658,52 649,51 648,49 643,49 643,47 646,46 646,44 651,41 649,40 655,37 655,36 661,34 670,31 679,31 684,29 689,29 691,30 689,31 680,33 671,35 662,38 658,42 654,45 655,48 660,51ZM237,28 240,29 246,29 248,31 247,32 250,33 252,34 256,34 260,34 264,33 270,33 275,33 278,35 278,36 277,37 272,38 269,37 261,38 255,38 251,38 243,36 242,34 242,33 239,31 233,31 230,30 231,28 237,28ZM177,26 177,29 175,30 172,31 167,32 163,33 159,32 163,29 169,27 173,27 177,26ZM797,29 798,31 800,30 809,30 815,31 817,33 816,35 813,36 806,38 804,39 807,39 811,40 814,40 815,42 817,41 821,40 830,41 831,43 842,43 842,40 848,41 853,41 857,43 858,45 857,47 860,50 865,51 867,47 872,49 877,48 882,49 884,48 889,48 887,45 890,44 915,46 918,48 925,51 936,50 942,51 944,52 944,55 947,56 951,55 956,55 961,56 966,55 971,58 974,57 972,55 973,53 982,54 988,54 996,56 1000,58 1000,72 996,73 993,73 995,75 997,78 998,79 999,80 998,81 993,81 985,83 982,84 978,86 974,88 973,90 969,88 962,90 961,89 958,91 954,90 953,92 950,96 950,97 953,98 953,103 950,104 949,107 950,108 945,110 945,114 940,115 940,119 936,122 935,119 933,114 932,106 933,101 935,99 936,97 940,97 945,92 950,88 955,86 957,81 953,81 952,84 945,88 943,83 935,85 928,91 931,93 924,94 920,94 920,91 916,91 913,93 904,92 895,93 886,100 875,109 880,109 881,111 884,112 886,110 889,110 893,114 893,117 891,121 890,125 889,131 885,136 884,139 880,143 876,147 875,149 871,151 869,151 867,150 864,152 863,153 862,153 861,154 860,156 860,158 859,159 858,160 857,161 855,161 854,162 854,164 855,165 857,166 859,171 860,173 860,177 859,179 856,180 854,181 851,181 851,180 852,177 850,173 852,173 850,169 849,169 848,170 848,169 847,169 846,168 847,167 848,166 848,164 848,163 846,163 845,162 841,163 839,164 836,165 838,164 837,162 839,160 838,158 835,159 832,162 831,164 828,164 826,166 828,168 830,169 830,171 833,172 836,169 838,170 840,171 840,172 836,173 835,175 832,177 831,180 834,182 835,185 837,188 839,191 839,194 837,195 838,197 839,198 839,201 838,204 836,204 834,208 832,213 830,217 826,220 822,223 819,224 817,225 816,224 815,226 811,228 808,228 807,232 805,232 805,229 805,228 801,227 800,228 796,231 794,234 794,236 796,240 798,245 801,247 802,250 804,257 803,263 801,265 798,268 796,271 792,274 791,272 792,269 790,267 787,267 786,265 785,261 782,259 780,260 780,257 778,257 778,261 776,266 775,269 776,272 777,272 779,275 779,278 781,280 782,281 784,283 786,285 787,287 787,290 787,291 787,293 788,295 788,296 790,299 790,300 788,300 785,298 782,295 781,293 780,291 779,288 778,286 779,283 778,282 777,280 776,278 775,276 774,275 773,277 773,275 773,273 774,269 773,267 774,264 773,262 774,258 773,256 772,252 771,247 770,244 768,246 765,248 763,248 762,247 763,243 762,240 760,235 760,234 759,234 757,231 756,229 756,227 755,225 754,223 751,223 752,225 751,227 750,226 749,226 748,226 747,226 747,227 745,227 742,228 742,230 740,233 736,235 733,239 731,241 728,244 728,245 727,246 724,248 723,248 722,251 723,255 723,258 722,262 722,268 720,268 719,271 720,272 717,273 717,275 715,276 713,273 711,268 710,264 709,263 708,259 707,255 707,252 704,247 703,241 702,236 702,232 702,228 698,230 696,230 692,226 693,224 693,223 689,220 687,219 687,216 684,214 679,214 675,214 671,215 666,214 663,213 659,213 658,208 657,207 655,208 652,210 649,209 646,206 643,205 641,201 639,197 638,197 636,196 635,198 633,197 634,199 634,200 634,202 636,206 637,206 637,208 639,209 639,211 639,212 640,213 640,214 641,215 641,216 641,213 642,212 642,211 643,212 643,214 643,217 643,218 644,218 644,219 646,218 648,218 650,218 652,216 654,214 656,211 657,210 657,212 656,213 657,215 658,218 659,219 661,220 663,220 664,222 665,224 666,224 666,225 665,227 665,228 664,229 662,232 661,231 661,232 660,234 661,236 660,237 659,237 657,238 657,240 656,241 655,241 654,242 654,243 652,244 651,244 649,245 648,245 646,246 645,248 645,249 642,250 638,252 635,255 634,255 633,255 632,256 630,257 627,257 626,258 625,258 625,259 624,259 623,260 621,260 620,257 620,255 620,254 619,252 618,250 619,250 619,248 619,246 618,245 618,244 617,242 616,241 615,238 614,235 612,232 611,232 609,228 608,226 609,224 607,220 606,218 604,218 603,216 603,215 603,213 602,212 601,210 599,207 598,204 596,204 597,202 597,201 597,200 597,199 596,200 596,203 595,205 594,206 593,205 592,203 590,198 591,202 593,205 595,211 596,213 597,215 599,219 599,220 599,222 602,225 602,226 603,229 603,230 603,234 604,238 605,239 607,240 608,244 609,248 611,249 614,253 616,255 617,257 618,258 620,259 620,260 620,262 619,263 620,264 621,264 621,266 623,267 624,267 627,266 630,266 632,265 633,265 634,264 636,264 637,264 638,263 640,263 641,262 642,262 642,263 642,265 642,267 641,268 640,272 639,276 637,280 635,286 633,290 629,295 627,297 622,301 620,304 617,308 616,310 616,311 614,312 613,314 612,314 611,317 611,318 610,320 609,322 608,326 608,328 610,329 610,330 609,332 609,334 609,335 610,338 611,341 612,342 612,343 612,347 613,350 613,356 613,358 612,360 611,363 610,365 607,366 604,368 601,372 600,372 598,375 597,376 596,378 598,381 598,383 598,384 599,384 599,388 598,389 599,390 598,391 597,393 595,394 592,396 590,397 591,399 591,401 591,403 590,406 589,408 588,410 587,410 586,412 585,414 583,417 580,420 578,422 576,424 573,425 572,426 572,427 570,426 569,427 566,426 564,426 563,426 560,428 557,428 556,430 554,430 553,428 552,428 551,427 551,426 551,424 550,422 551,421 551,418 549,415 547,412 545,407 543,405 542,402 542,398 541,396 540,390 540,386 540,384 539,383 537,380 536,375 535,373 533,370 533,367 532,365 533,361 534,358 534,357 535,353 535,352 537,350 538,348 538,345 538,343 537,342 536,340 536,338 536,337 537,336 536,332 535,330 534,327 534,326 533,323 531,319 528,315 526,313 524,309 525,308 525,306 526,304 526,301 527,297 527,294 526,291 525,291 524,289 524,288 521,289 520,289 519,290 516,290 515,287 514,285 512,282 510,282 507,282 505,283 503,284 499,286 497,287 495,288 492,287 491,287 489,286 487,286 484,287 482,288 479,289 478,289 475,287 472,285 470,283 468,280 467,280 465,279 464,277 464,276 463,273 462,271 461,269 460,269 460,268 459,267 459,266 458,265 456,264 455,263 455,262 454,261 454,260 453,258 454,256 452,253 451,252 452,251 454,249 454,247 454,245 455,243 455,240 455,236 455,235 455,233 454,231 453,230 453,228 453,226 454,225 455,223 455,222 456,220 457,217 458,217 459,215 459,213 460,211 462,209 464,206 465,204 468,204 470,201 471,200 473,197 473,193 474,190 474,188 476,186 479,184 481,183 483,179 484,177 486,177 487,178 490,178 493,179 494,179 497,177 500,176 501,175 504,174 509,173 513,173 515,173 517,172 520,172 521,173 523,172 526,171 528,171 528,173 531,172 529,174 529,176 530,177 530,180 528,182 529,184 530,184 531,185 532,186 535,187 536,187 539,188 542,189 544,192 546,193 550,195 553,196 554,195 556,194 555,191 556,189 558,188 560,187 564,188 565,189 566,189 566,190 569,190 570,192 574,192 576,193 579,194 580,194 582,193 584,192 586,192 588,192 589,194 589,193 592,194 594,194 595,193 596,192 596,191 597,190 597,187 597,186 598,186 599,183 600,181 600,178 600,176 599,175 600,173 599,174 596,173 595,175 590,175 588,173 585,173 584,175 583,175 580,173 577,173 575,170 573,168 574,165 573,163 576,160 580,160 581,157 587,157 590,155 593,154 598,154 603,157 607,158 610,157 612,158 615,156 616,154 615,152 614,151 612,150 611,149 607,146 604,145 602,143 604,142 606,139 605,138 609,136 609,135 606,136 604,136 602,137 600,138 597,139 597,141 599,142 601,142 601,143 598,144 594,146 593,145 593,143 590,142 591,142 593,140 592,140 588,139 588,137 585,138 584,140 582,142 582,143 581,144 580,144 579,148 578,150 577,152 578,154 578,156 581,157 580,158 577,158 576,159 573,161 572,159 572,158 571,158 569,158 566,159 568,161 566,162 565,162 563,160 563,163 565,164 564,165 565,167 567,168 567,170 564,169 565,171 563,171 564,174 562,174 560,173 559,170 559,167 558,166 556,164 556,163 556,162 555,162 554,160 554,159 554,156 554,155 553,154 552,153 551,152 549,151 547,150 544,149 542,146 543,146 541,144 541,143 540,143 539,144 538,143 538,142 539,141 537,141 534,142 534,144 534,145 535,147 538,149 539,151 542,154 544,154 545,155 544,156 547,157 549,158 551,160 551,161 551,162 549,160 547,160 546,162 548,163 547,165 546,166 545,169 544,169 544,168 544,166 545,165 544,163 543,161 542,161 541,159 539,159 538,157 536,157 534,155 531,153 529,151 528,147 527,147 525,146 523,146 522,148 521,148 518,150 513,149 509,150 508,153 508,155 506,157 502,158 502,159 500,161 499,164 500,166 499,168 498,170 496,171 494,173 491,173 488,173 486,175 485,176 484,176 483,174 482,172 479,172 478,173 477,172 475,173 476,170 475,168 474,167 474,166 474,164 475,162 475,161 476,159 476,157 475,156 475,155 475,152 474,151 478,148 481,149 485,149 488,149 490,149 495,149 496,147 497,140 494,136 492,134 488,133 487,130 491,129 496,130 495,126 497,128 504,125 505,122 507,121 509,121 511,120 513,114 517,113 519,113 520,112 522,112 523,113 524,111 524,110 524,108 523,106 522,102 523,101 524,100 526,100 527,99 529,98 529,100 528,101 529,102 530,102 530,104 529,103 527,106 528,108 528,109 530,110 530,111 533,110 535,109 538,111 539,112 541,111 545,109 549,108 552,109 552,110 555,110 555,108 559,107 558,104 559,101 560,99 563,98 565,100 567,100 568,98 568,95 567,96 565,95 565,93 568,92 572,91 575,92 578,92 581,90 578,88 573,88 568,89 564,90 562,88 559,87 560,84 558,80 560,78 562,76 569,72 571,71 570,70 566,68 562,69 559,72 559,74 555,77 550,80 548,85 550,87 552,89 550,93 547,94 546,100 544,104 541,103 539,106 536,106 535,103 533,99 531,94 529,92 523,96 520,97 516,95 515,91 514,83 516,80 524,77 529,74 534,69 541,62 546,59 553,54 559,53 564,53 568,50 573,50 578,50 587,52 583,53 586,55 589,54 594,56 601,57 612,61 614,63 614,65 611,67 607,68 594,65 592,66 597,68 597,74 601,75 603,76 603,74 601,73 603,71 610,73 612,73 610,70 617,66 619,67 622,68 624,65 621,63 623,61 621,59 628,60 630,62 627,63 627,65 629,66 633,65 634,63 640,61 649,58 651,58 649,60 652,61 654,59 659,59 663,58 667,60 670,58 667,56 668,54 676,55 680,57 690,61 692,59 689,57 689,56 686,56 687,54 685,51 685,50 690,47 692,44 694,43 702,44 702,46 700,49 701,50 702,52 702,57 705,60 703,62 698,67 701,68 702,66 705,65 706,64 708,62 707,60 708,57 705,57 704,55 707,52 703,49 708,46 707,44 709,44 710,46 709,49 712,50 711,47 715,46 721,45 726,48 724,45 724,41 728,40 735,40 741,40 739,38 742,35 745,35 751,34 758,33 759,32 766,32 769,33 775,31 780,31 781,29 783,28 790,26 795,27 791,28 797,29ZM239,27 238,27 233,27 232,26 238,26 240,26 239,27ZM194,26 189,27 185,26 187,25 191,25 195,25 194,26ZM569,26 562,27 558,26 559,25 558,24 564,23 565,25 569,26ZM195,23 192,24 187,24 187,23 190,22 192,22 195,23ZM234,25 230,26 227,25 226,23 226,22 230,22 231,22 235,24 234,25ZM222,24 223,25 219,25 214,24 208,24 211,23 207,22 207,20 212,21 220,22 222,24ZM792,24 776,25 781,21 784,20 786,21 793,23 792,24ZM551,19 560,22 553,23 551,26 549,26 548,29 544,30 538,27 541,26 537,25 531,22 529,19 537,18 538,19 542,19 543,18 547,18 551,19ZM571,16 576,18 572,20 564,20 556,19 555,18 551,18 548,17 557,16 561,17 564,16 571,16ZM642,16 638,16 636,17 635,17 632,18 629,17 631,16 625,16 630,15 634,15 635,16 636,15 639,15 643,15 642,16ZM778,22 772,22 764,21 759,20 757,17 753,17 760,14 767,13 772,15 778,19 778,22ZM258,19 262,20 258,21 253,24 248,24 242,24 239,22 239,21 241,20 236,20 233,19 231,17 233,16 235,15 238,14 237,14 243,13 247,15 252,16 256,17 258,19ZM310,7 317,7 323,8 328,9 321,11 315,12 312,13 318,13 312,15 307,16 302,19 297,19 295,20 286,20 290,21 288,21 291,23 288,24 284,25 282,27 278,28 279,29 284,29 276,32 269,31 261,31 257,31 251,31 251,29 256,28 255,25 257,25 264,27 260,24 256,24 258,22 263,22 264,20 260,19 259,17 266,17 268,18 273,16 266,16 257,16 252,15 249,13 246,12 246,11 250,10 253,10 258,10 262,8 266,9 269,10 271,8 275,7 280,7 288,7 290,7 298,6 304,7 310,7ZM425,5 442,8 437,10 426,10 411,10 413,11 423,10 431,12 436,10 439,12 436,14 443,12 456,11 465,12 466,13 455,16 453,17 444,17 451,17 448,20 445,22 445,26 449,29 444,29 440,30 445,32 446,35 443,35 446,38 440,39 443,40 442,41 438,42 435,42 438,44 438,46 433,44 431,45 435,46 439,49 440,51 435,52 432,51 429,49 430,51 427,53 434,53 438,53 430,56 423,59 415,61 412,61 409,62 405,66 399,68 397,68 393,69 389,70 387,72 387,75 386,77 381,80 382,83 381,86 380,89 376,90 371,87 366,87 363,85 361,81 357,77 355,74 355,71 351,68 352,65 350,64 353,60 357,58 358,57 359,54 356,55 354,56 352,56 348,55 348,53 349,51 352,51 357,52 352,49 350,48 347,49 345,48 348,45 346,43 344,41 341,37 337,36 337,34 330,32 324,32 316,32 310,32 306,31 302,29 309,28 315,27 303,26 296,25 297,24 307,22 317,20 319,19 311,18 313,16 323,14 327,13 326,12 333,11 341,10 350,10 353,11 360,9 367,11 371,11 376,12 370,10 370,9 379,6 389,7 393,5 403,5 425,5Z';
+const CITY = {}; CITIES.forEach(c=>CITY[c.name]=c);
+const REGIONS = [...new Set(CITIES.map(c=>c.region))];
+const ECO_REGIONS = ['Latijns-Amerika','Sub-Sahara Afrika','ZO-Azië & Oceanië'];
+
+const GEBOUWEN = {
+  R:{naam:'Research Hub',            icon:'flask',    desc:'Iedereen die hier staat mag 1×/beurt gratis de volgende Pressure-kaart bekijken. Vereist voor Schone Energie. Doelwit voor AI-risico.'},
+  E:{naam:'Energy Transition Site',  icon:'zap',      desc:'Rood of zwart behandelen in deze stad verwijdert 1 extra blokje. Vereist voor Schone Energie. Bij lage acceptatie +1 economie bouwkosten.'},
+  N:{naam:'Ecosystem Recovery Zone', icon:'leaf',     desc:'Herstelt aan het einde van elke ronde automatisch 1 groen blokje hier of in een buurstad. Vereist voor Ecologisch Herstel.'},
+  A:{naam:'Adaptation Center',       icon:'shield',   desc:'Vangt de eerste rode uitbraak in deze stad op; het schild herstelt bij elke Escalation. Telt voor Veerkrachtige Samenleving.'},
+  H:{naam:'Economic & Social Hub',   icon:'landmark', desc:'Geeft aan het begin van elke ronde +1 economie (1×, hoeveel hubs ook). Sociale campagne is hier gratis. Vereist voor de sociale en governance-doorbraak.'},
+};
+const MAX_GEBOUWEN = 6;
+
+const CURES = [
+  { id:'energie',    naam:'Schone Energie Transitie',  icon:'zap', type:'ROOD',
+    reqText:'4 stadkaarten uit ≥3 regio’s · sta bij Research Hub (R) of Energy Site (E) · economie ≥2',
+    effectText:'Rood behandelen = alle rode blokjes weg met 1 actie. Fossiele compound-effecten (rood/zwart) vervallen.' },
+  { id:'eco',        naam:'Ecologisch Herstel',        icon:'leaf', type:'GROEN',
+    reqText:'4 stadkaarten waarvan ≥2 uit Lat-Amerika / Sub-Sahara / ZO-Azië · sta bij Ecosystem Recovery Zone (N)',
+    effectText:'Groen behandelen = alle groene blokjes weg met 1 actie. Groene kettingeffecten vervallen.' },
+  { id:'sociaal',    naam:'Veerkrachtige Samenleving', icon:'users', type:'GEEL',
+    reqText:'4 stadkaarten uit ≥3 regio’s · acceptatie ≥4 · sta bij Adaptation Center (A) of Econ & Social Hub (H)',
+    effectText:'Geel behandelen = alles weg met 1 actie. Protest verwijderen is gratis. +1 acceptatie.' },
+  { id:'governance', naam:'Mondiale Samenwerking',     icon:'globe', type:'ZWART',
+    reqText:'4 stadkaarten uit ≥4 regio’s · sta bij Economic & Social Hub (H)',
+    effectText:'Zwart behandelen = alles weg met 1 actie. Kennis delen zonder kaartrestrictie. Legacy-effecten neutraliseerbaar (1 actie + 1 econ).' },
+];
+
+const ROLLEN = [
+  { id:'scientist', naam:'Systems Scientist', kleur:'#5DADE2',
+    desc:'1×/beurt gratis bovenste Pressure-kaart bekijken · Schone Energie & Ecologisch Herstel met 3 kaarten i.p.v. 4 · kan AI Governance Failure neutraliseren (1 actie + 1 kaart).' },
+  { id:'engineer', naam:'Infrastructure Engineer', kleur:'#E67E22',
+    desc:'Eerste gebouw per beurt kost geen economie · behandelt rood en zwart met 2 blokjes per actie.' },
+  { id:'economist', naam:'Transition Economist', kleur:'#27ae60',
+    desc:'1×/beurt wordt het eerste economieverlies in jouw beurt met 1 verminderd · Veerkrachtige Samenleving & Mondiale Samenwerking met 3 kaarten i.p.v. 4.' },
+  { id:'diplomat', naam:'Diplomat / Coalition Builder', kleur:'#b07cc6',
+    desc:'Mag elke stadskaart delen met een speler in dezelfde stad · 1×/beurt: actie voor +1 sociale acceptatie.' },
+  { id:'responder', naam:'Crisis Response Coordinator', kleur:'#E74C3C',
+    desc:'Behandelen verwijdert álle blokjes van één kleur in je stad · na een doorbraak verdwijnen blokjes van die kleur automatisch (en gratis) in elke stad waar jij staat of binnenkomt.' },
+];
+const PLAYERCOLORS = ['#5DADE2','#E67E22','#b07cc6','#16A085'];
+
+/* ── PRESSURE DECK (24) — kaartenset v1 ──────────────────────── */
+/* comp: {tekst, check(S), apply(H)} — compound check vóór primaire plaatsing */
+const PRESSURE = [
+ {id:1, type:'ROOD', stad:'Vancouver',    titel:'Bosbranden'},
+ {id:2, type:'ROOD', stad:'Houston',      titel:'Extreme hitte',
+   comp:{tekst:'Houston heeft al ⚫: Cascade +1', check:S=>cube('Houston','ZWART')>0, apply:H=>H.cascade(1,'Compound: hitte + petrochemie in Houston')}},
+ {id:3, type:'ROOD', stad:'Istanbul',     titel:'Hittestress'},
+ {id:4, type:'ROOD', stad:'Caïro',        titel:'Woestijnuitbreiding',
+   comp:{tekst:'Caïro heeft al 🟡: ook 1 🟡 in Nairobi', check:S=>cube('Caïro','GEEL')>0, apply:H=>H.cube('Nairobi','GEEL',1)}},
+ {id:5, type:'ROOD', stad:'Delhi',        titel:'Extreme hitte',
+   comp:{tekst:'Delhi heeft al 🟡: protesttoken in Delhi', check:S=>cube('Delhi','GEEL')>0, apply:H=>H.protest('Delhi',1)}},
+ {id:6, type:'ROOD', stad:'Dhaka',        titel:'Overstromingsdruk'},
+ {id:7, type:'ROOD', stad:'Sydney',       titel:'Droogte en hitte',
+   comp:{tekst:'Sydney heeft al 🟢: ook 1 🔴 in Tokio', check:S=>cube('Sydney','GROEN')>0, apply:H=>H.cube('Tokio','ROOD',1)}},
+ {id:8, type:'GROEN',stad:'Vancouver',    titel:'Bossterfte',
+   comp:{tekst:'Geen 🌿 zone in Noord-Amerika: +1 extra 🟢', check:S=>!regioHeeftGebouw('Noord-Amerika','N'), apply:H=>H.cube('Vancouver','GROEN',1)}},
+ {id:9, type:'GROEN',stad:'Manaus',       titel:'Ontbossingsdruk',
+   comp:{tekst:'Manaus heeft al 🟡: ook 1 🟡', check:S=>cube('Manaus','GEEL')>0, apply:H=>H.cube('Manaus','GEEL',1)}},
+ {id:10,type:'GROEN',stad:'Nairobi',      titel:'Biodiversiteitsverlies'},
+ {id:11,type:'GROEN',stad:'Johannesburg', titel:'Bodemdegradatie'},
+ {id:12,type:'GROEN',stad:'Jakarta',      titel:'Mangroveverlies',
+   comp:{tekst:'Jakarta heeft al ⚫: ook 1 🔴', check:S=>cube('Jakarta','ZWART')>0, apply:H=>H.cube('Jakarta','ROOD',1)}},
+ {id:13,type:'GROEN',stad:'Singapore',    titel:'Kustecosysteemdruk'},
+ {id:14,type:'ZWART',stad:'Houston',      titel:'Methaanlekken'},
+ {id:15,type:'ZWART',stad:'Mexico-Stad',  titel:'Luchtvervuiling'},
+ {id:16,type:'ZWART',stad:'Casablanca',   titel:'Havenvervuiling'},
+ {id:17,type:'ZWART',stad:'Lagos',        titel:'Olie-infrastructuurlek',
+   comp:{tekst:'Lagos heeft al ⚫: economie −1', check:S=>cube('Lagos','ZWART')>0, apply:H=>H.econ(-1,'Olielek schaadt economie')}},
+ {id:18,type:'ZWART',stad:'Shanghai',     titel:'Industriële vervuiling',
+   comp:{tekst:'Seoul heeft ook ⚫: 1 ⚫ in Seoul', check:S=>cube('Seoul','ZWART')>0, apply:H=>H.cube('Seoul','ZWART',1)}},
+ {id:19,type:'ZWART',stad:'Jakarta',      titel:'Plastic- en kustvervuiling',
+   comp:{tekst:'Jakarta heeft al 🔴: Cascade +1', check:S=>cube('Jakarta','ROOD')>0, apply:H=>H.cascade(1,'Compound: plastic + klimaatdruk Jakarta')}},
+ {id:20,type:'GEEL', stad:'Mexico-Stad',  titel:'Voedselketenstress'},
+ {id:21,type:'GEEL', stad:'Riyad',        titel:'Water- en landbouwdruk'},
+ {id:22,type:'GEEL', stad:'Lagos',        titel:'Voedselprijsdruk'},
+ {id:23,type:'GEEL', stad:'Mumbai',       titel:'Veeteelt- en ketenstress',
+   comp:{tekst:'Mumbai heeft al ⚫: sociale acceptatie −1', check:S=>cube('Mumbai','ZWART')>0, apply:H=>H.sociaal(-1,'Veeteelt-keten onder vuur')}},
+ {id:24,type:'GEEL', stad:'Amsterdam',    titel:'Weerstand prijsmaatregelen', socialPrimair:true,
+   comp:{tekst:'Amsterdam heeft al 🟡: ook 1 🟡', check:S=>cube('Amsterdam','GEEL')>0, apply:H=>H.cube('Amsterdam','GEEL',1)}},
+];
+const PDEF = {}; PRESSURE.forEach(p=>PDEF[p.id]=p);
+
+/* ── CRISIS SURGE DECK (8) — getrokken bij elke Escalation ───── */
+const SURGE = [
+ {id:1, type:'ROOD', stad:'New York', titel:'Superstorm',
+   condTekst:'New York heeft al 🔴', check:S=>cube('New York','ROOD')>0,
+   compound:H=>{H.cube('New York','ROOD',2);}, compTekst:'Plaats 2 🔴 in New York'},
+ {id:2, type:'ROOD', stad:'Tokio', titel:'Tyfoonketen',
+   condTekst:'Tokio heeft al 🔴', check:S=>cube('Tokio','ROOD')>0,
+   compound:H=>{H.cube('Tokio','ROOD',1);H.cube('Seoul','ROOD',1);}, compTekst:'1 🔴 Tokio + 1 🔴 Seoul'},
+ {id:3, type:'GROEN', stad:'São Paulo', titel:'Habitatcollaps',
+   condTekst:'São Paulo heeft al 🟢', check:S=>cube('São Paulo','GROEN')>0,
+   compound:H=>{H.cube('São Paulo','GROEN',1);H.cube('Manaus','GROEN',1);}, compTekst:'1 🟢 São Paulo + 1 🟢 Manaus'},
+ {id:4, type:'GROEN', stad:'Dhaka', titel:'Deltaverwoesting',
+   condTekst:'Dhaka heeft al 🔴', check:S=>cube('Dhaka','ROOD')>0,
+   compound:H=>{H.cube('Dhaka','GROEN',2);}, compTekst:'Plaats 2 🟢 in Dhaka'},
+ {id:5, type:'ZWART', stad:'Warschau', titel:'Kolencrisis',
+   condTekst:'Warschau heeft al ⚫', check:S=>cube('Warschau','ZWART')>0,
+   compound:H=>{H.cube('Warschau','ZWART',1);H.econ(-1,'Kolencrisis Warschau');}, compTekst:'1 ⚫ + economie −1'},
+ {id:6, type:'ZWART', stad:'Seoul', titel:'Industriepiek',
+   condTekst:'Seoul heeft al ⚫', check:S=>cube('Seoul','ZWART')>0,
+   compound:H=>{H.cube('Seoul','ZWART',1);H.cube('Shanghai','ZWART',1);}, compTekst:'1 ⚫ Seoul + 1 ⚫ Shanghai'},
+ {id:7, type:'GEEL', stad:'Nairobi', titel:'Oogstfalen',
+   condTekst:'Nairobi heeft al 🟢', check:S=>cube('Nairobi','GROEN')>0,
+   compound:H=>{H.cube('Nairobi','GEEL',2);}, compTekst:'Plaats 2 🟡 in Nairobi'},
+ {id:8, type:'GEEL', stad:'Delhi', titel:'Voedselzekerheidscrisis',
+   condTekst:'Delhi heeft al 🔴', check:S=>cube('Delhi','ROOD')>0,
+   compound:H=>{H.cube('Delhi','GEEL',1);H.cube('Mumbai','GEEL',1);}, compTekst:'1 🟡 Delhi + 1 🟡 Mumbai'},
+];
+const SDEF = {}; SURGE.forEach(s=>SDEF[s.id]=s);
+
+/* ── EVENT CARDS (5) ─────────────────────────────────────────── */
+const EVENTS = [
+ {id:'leak',  naam:'Rapid Leak Repair', kost:0,
+   desc:'Gratis: verwijder 2 ⚫ uit één stad, of 1 ⚫ uit twee verbonden steden.'},
+ {id:'coalition', naam:'Emergency Coalition', kost:0, reactief:true,
+   desc:'Bij een Escalation, vóór resolutie: negeer de Legacy-stap óf verlaag de Cascade Track met 1.'},
+ {id:'comm',  naam:'Public Communication Surge', kost:1,
+   desc:'Actie: +1 sociale acceptatie, óf verwijder 2 protesttokens. Neutraliseert Social Backlash.'},
+ {id:'bonds', naam:'Green Bonds Package', kost:1,
+   desc:'Actie: +2 economie, óf bouw 1 gebouw gratis (zonder kaart of economie).'},
+ {id:'food',  naam:'Strategic Food Release', kost:1,
+   desc:'Actie: verwijder alle 🟡 uit één stad, óf 1 🟡 uit elke stad in één macroregio.'},
+];
+const EDEF = {}; EVENTS.forEach(e=>EDEF[e.id]=e);
+
+/* ── IMMEDIATE LEGACY DECK (12) ──────────────────────────────── */
+/* bron 'esc'  = trekbaar bij Escalation #3+  ·  bron 'auto' = bord-trigger */
+const LEGACY = [
+ {id:'lockin', titel:'Fossiele Lock-in', soort:'neg', bron:'esc',
+   cond:(n)=>n===3||n===4,
+   tekst:r=>`Energy Transition Site bouwen in ${r} kost +1 economie.`,
+   neutr:'Schone Energie Transitie'},
+ {id:'backlash', titel:'Social Backlash', soort:'neg', bron:'esc',
+   cond:(n)=>n>=4,
+   tekst:r=>`Protesttokens in 2 steden geplaatst, sociale acceptatie −1.`,
+   neutr:'Public Communication Surge of Veerkrachtige Samenleving'},
+ {id:'biodiv', titel:'Biodiversity Collapse', soort:'neg', bron:'esc',
+   cond:(n)=>n===3,
+   tekst:r=>`Groene uitbraken in ${r} veroorzaken ook 1 🟡 in de uitbarstende stad.`,
+   neutr:'Ecologisch Herstel'},
+ {id:'aigov', titel:'AI Governance Failure', soort:'neg', bron:'esc',
+   cond:(n)=>n>=4, extra:S=>gebouwBestaat('R'),
+   tekst:r=>`Alle Research Hub-voordelen geblokkeerd (2 ronden). Economie −1.`,
+   neutr:'Systems Scientist: 1 actie + 1 kaart'},
+ {id:'protestwave', titel:'Protest Wave', soort:'neg', bron:'esc',
+   cond:(n)=>n>=5,
+   tekst:r=>`Protesttokens in 3 steden, sociale acceptatie −2.`,
+   neutr:'Veerkrachtige Samenleving'},
+ {id:'regiotip', titel:'Regionale Tipping Point', soort:'neg', bron:'auto',
+   tekst:r=>`${r} is overbelast: Pressure-kaarten plaatsen hier 1 extra blokje zolang de regio op/boven de drempel zit.`,
+   neutr:'Behandel de regio onder de drempel — het effect dooft dan uit'},
+ {id:'arctic', titel:'Tipping Point: Arctisch', soort:'neg', bron:'auto',
+   tekst:r=>`Elke toekomstige Escalation plaatst ook 1 extra 🔴 in de zwaarst belaste stad.`,
+   neutr:'Schone Energie Transitie'},
+ {id:'govbreak', titel:'Governance Breakthrough', soort:'pos', bron:'esc',
+   cond:(n)=>n===3, extra:S=>S.sociaal>=3,
+   tekst:r=>`Kennis delen kost geen actie (3 ronden). Economie +1.`},
+ {id:'resilience', titel:'Climate Resilience Package', soort:'pos', bron:'esc',
+   cond:(n)=>n===4, extra:S=>gebouwBestaat('A'),
+   tekst:r=>`De eerste rode uitbraak in ${r} wordt genegeerd (eenmalig).`},
+ {id:'justtrans', titel:'Just Transition Pact', soort:'pos', bron:'auto',
+   tekst:r=>`Sociale acceptatie +1. Energy Transition Sites kosten geen sociale toeslag meer.`},
+ {id:'renewboom', titel:'Renewable Energy Boom', soort:'pos', bron:'esc',
+   cond:(n)=>n===3||n===4, extra:S=>gebouwBestaat('E'),
+   tekst:r=>`Rood behandelen verwijdert 2 blokjes per actie (2 ronden). Economie +1.`},
+ {id:'famine', titel:'Drought & Famine Spiral', soort:'neg', bron:'auto',
+   tekst:r=>`Elke gele Pressure-kaart in ${r} plaatst 2 blokjes i.p.v. 1.`,
+   neutr:'Ecologisch Herstel of Veerkrachtige Samenleving'},
+ {id:'aid', titel:'International Aid Framework', soort:'pos', bron:'esc',
+   cond:(n)=>n>=5, extra:S=>S.cures.governance,
+   tekst:r=>`Kennis delen kost geen actie. Cascade Track −1.`},
+];
+const LDEF = {}; LEGACY.forEach(l=>LDEF[l.id]=l);
+
+/* ── CONSTANTEN ──────────────────────────────────────────────── */
+const SUPPLY_START = 24;
+const CASCADE_MAX = 8;
+const CUREMAP = {ROOD:'energie', GROEN:'eco', ZWART:'governance', GEEL:'sociaal'};
+const HAND_LIMIT = 7;
+const ECON_MAX = 8, SOC_MAX = 6;
+const START_STAD = 'Amsterdam';
+const RATES = {4:[2,2,3,3], 5:[2,2,3,3,3], 6:[2,2,3,3,3,4]};
+
+/* ── STATE ───────────────────────────────────────────────────── */
+let S = null;          // game state
+let UI = { mode:null, modeData:null, peeked:false };
+
+function nieuwState(spelers, diff, rolKeuzes){
+  const st = {
+    over:null, diff, round:1, phase:'acties',
+    economie:4, sociaal:2, cascade:0, escN:0,
+    supply:{ROOD:SUPPLY_START,GROEN:SUPPLY_START,ZWART:SUPPLY_START,GEEL:SUPPLY_START},
+    steden:{}, players:[], cur:0, actions:4,
+    playerDeck:[], playerDiscard:[], pressureDeck:[], pressureDiscard:[],
+    surgeDeck:shuffle(SURGE.map(s=>s.id)),
+    legacyDeck:LEGACY.filter(l=>l.bron==='esc').map(l=>l.id),
+    legacyActive:[],   // {id, regio?, steden?, expires?, used?}
+    cures:{energie:false,eco:false,sociaal:false,governance:false},
+    gratisDelen:false, // via legacy
+    laatstePressure:null,
+  };
+  CITIES.forEach(c=> st.steden[c.name]={cubes:{ROOD:0,GROEN:0,ZWART:0,GEEL:0}, gebouw:null, protest:0});
+  const gekozen=(rolKeuzes||[]).map(r=>r||null);
+  const seen=new Set();
+  gekozen.forEach((r,i)=>{ if(r&&seen.has(r)) gekozen[i]=null; else if(r) seen.add(r); });
+  const rest=shuffle(ROLLEN.map(r=>r.id).filter(id=>!seen.has(id)));
+  spelers.forEach((naam,i)=> st.players.push({
+    naam: naam || `Speler ${i+1}`, rol: gekozen[i]||rest.pop(), stad:START_STAD, hand:[],
+    kleur:PLAYERCOLORS[i], usedPeek:false, usedDiplomat:false, usedEconShield:false, usedFreeBuild:false,
+  }));
+  return st;
+}
+
+/* ── HULPFUNCTIES ────────────────────────────────────────────── */
+function shuffle(a){ a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function cube(stad,type){ return S.steden[stad].cubes[type]; }
+function regioSteden(regio){ return CITIES.filter(c=>c.region===regio).map(c=>c.name); }
+function regioHeeftGebouw(regio,letter){ return regioSteden(regio).some(s=>S.steden[s].gebouw===letter); }
+function gebouwBestaat(letter){ return CITIES.some(c=>S.steden[c.name].gebouw===letter); }
+function gebouwSteden(){ return CITIES.filter(c=>S.steden[c.name].gebouw).map(c=>c.name); }
+function legacyActief(id){ return S.legacyActive.find(l=>l.id===id); }
+function rolVan(p){ return ROLLEN.find(r=>r.id===p.rol); }
+function curP(){ return S.players[S.cur]; }
+function totaalCubes(type){ return CITIES.reduce((a,c)=>a+S.steden[c.name].cubes[type],0); }
+function kaartIsEvent(k){ return typeof k==='string' && k.startsWith('EV:'); }
+function kaartIsEsc(k){ return k==='ESCALATION'; }
+function eventId(k){ return k.slice(3); }
+
+function log(msg, cls){
+  const el = document.getElementById('log');
+  const d = document.createElement('div');
+  if(cls) d.className = 'l-'+cls;
+  d.innerHTML = msg;
+  el.prepend(d);
+  while(el.children.length>120) el.removeChild(el.lastChild);
+}
+
+/* ── MODAL (promise-based, met wachtrij tegen race conditions) ── */
+let _modalQueue=[], _modalBusy=false;
+function showModal(opts){
+  return new Promise(res=>{ _modalQueue.push({opts,res}); _pumpModal(); });
+}
+function _pumpModal(){
+  if(_modalBusy || _modalQueue.length===0) return;
+  _modalBusy=true;
+  const {opts,res}=_modalQueue.shift();
+  const {title, html, buttons, render}=opts;
+  const root=document.getElementById('modalroot');
+  const finish=v=>{ root.classList.remove('show'); _modalBusy=false; res(v); _pumpModal(); };
+  document.getElementById('mhead').textContent=title;
+  document.getElementById('mbody').innerHTML=html||'';
+  const foot=document.getElementById('mfoot'); foot.innerHTML='';
+  (buttons||[{label:'OK', value:true, cls:'primary'}]).forEach(b=>{
+    const btn=document.createElement('button');
+    btn.className='mbtn '+(b.cls||'');
+    btn.textContent=b.label;
+    if(b.disabled) btn.disabled=true;
+    btn.onclick=()=>finish(b.value);
+    btn.dataset.val = String(b.value);
+    foot.appendChild(btn);
+  });
+  root.classList.add('show');
+  if(render) render(document.getElementById('mbody'), finish);
+}
+function info(title, html){ return showModal({title, html, buttons:[{label:'OK', value:true, cls:'primary'}]}); }
+
+/* ── TRACK-WIJZIGINGEN ───────────────────────────────────────── */
+function wijzigEcon(d, reden){
+  if(S.over) return;
+  if(d<0){
+    const p=curP();
+    if(p && p.rol==='economist' && S.phase!=='setup' && !p.usedEconShield){
+      p.usedEconShield=true; d+=1;
+      log(`💼 Transition Economist dempt economieverlies (−1 minder).`, 'good');
+      if(d>=0){ render(); return; }
+    }
+  }
+  S.economie=Math.max(0,Math.min(ECON_MAX,S.economie+d));
+  log(`${d>0?'📈':'📉'} Economie ${d>0?'+':''}${d}${reden?' — '+reden:''} (nu ${S.economie})`, d>0?'good':'bad');
+}
+function wijzigSociaal(d, reden){
+  if(S.over) return;
+  S.sociaal=Math.max(0,Math.min(SOC_MAX,S.sociaal+d));
+  log(`${d>0?'🙌':'😠'} Sociale acceptatie ${d>0?'+':''}${d}${reden?' — '+reden:''} (nu ${S.sociaal})`, d>0?'good':'bad');
+}
+function wijzigCascade(d, reden){
+  if(S.over) return;
+  S.cascade=Math.max(0,S.cascade+d);
+  log(`⚠️ Cascade Track ${d>0?'+':''}${d}${reden?' — '+reden:''} (nu ${S.cascade}/${CASCADE_MAX})`, d>0?'bad':'good');
+  if(S.cascade>=CASCADE_MAX) verlies('De Cascade Track is vol: de wereld kantelt in onomkeerbare kettingreacties.');
+}
+
+/* ── CUBES & OUTBREAKS ───────────────────────────────────────── */
+function plaatsCubes(stad, type, n, ctx){
+  if(S.over) return;
+  ctx = ctx || {outbroken:new Set()};
+  for(let i=0;i<n;i++){
+    if(S.over) return;
+    // Crisis Response Coordinator blokkeert plaatsing van een 'gecured' type in zijn stad
+    if(S.cures[CUREMAP[type]] && S.players.some(q=>q.rol==='responder'&&q.stad===stad)){
+      if(!ctx.medicLogged){ log(`🚑 Crisis Response Coordinator in ${stad} voorkomt nieuwe ${TYPES[type].emoji} blokjes.`, 'good'); ctx.medicLogged=true; }
+      continue;
+    }
+    const c=S.steden[stad];
+    if(c.cubes[type]>=3){ uitbraak(stad,type,ctx); }
+    else {
+      if(S.supply[type]<=0){ verlies(`De ${TYPES[type].emoji} ${TYPES[type].label}-crisis is volledig uit de hand gelopen (voorraad blokjes op).`); return; }
+      S.supply[type]--; c.cubes[type]++;
+    }
+  }
+}
+function uitbraak(stad, type, ctx){
+  if(ctx.outbroken.has(stad)) return;
+  ctx.outbroken.add(stad);
+  // Adaptation Center: negeert eerste rode uitbraak in eigen stad
+  const cs=S.steden[stad];
+  if(type==='ROOD' && cs.gebouw==='A' && !cs.adaptUsed){
+    cs.adaptUsed=true;
+    log(`🛡️ Adaptation Center in ${stad} vangt de rode uitbraak op!`, 'good');
+    return;
+  }
+  // Climate Resilience Package: eerste rode uitbraak in regio genegeerd
+  const res=legacyActief('resilience');
+  if(type==='ROOD' && res && !res.used && CITY[stad].region===res.regio){
+    res.used=true;
+    log(`📦 Climate Resilience Package negeert de rode uitbraak in ${stad} (${res.regio}).`, 'good');
+    return;
+  }
+  log(`💥 <b>UITBRAAK</b> in ${stad} (${TYPES[type].emoji} ${TYPES[type].label})!`, 'bad');
+  UI.flash={stad, kind:'out'};
+  wijzigCascade(1, `uitbraak ${stad}`);
+  if(S.over) return;
+  wijzigSociaal(1, 'zichtbare crisis vergroot draagvlak');
+  // Biodiversity Collapse: groene uitbraak in regio → +1 geel
+  const bio=legacyActief('biodiv');
+  if(type==='GROEN' && bio && CITY[stad].region===bio.regio){
+    log(`🥀 Biodiversity Collapse: ook 1 🟡 in ${stad}.`, 'bad');
+    plaatsCubes(stad,'GEEL',1,ctx);
+  }
+  for(const buur of CITY[stad].conns){
+    if(S.over) return;
+    plaatsCubes(buur, type, 1, ctx);
+  }
+}
+function verwijderCube(stad,type,n){
+  const c=S.steden[stad];
+  const x=Math.min(n,c.cubes[type]);
+  c.cubes[type]-=x; S.supply[type]+=x;
+  return x;
+}
+
+/* ── AUTO-LEGACY / TIPPING POINTS ────────────────────────────── */
+function regioDrempel(regio){ return 2*regioSteden(regio).length; }
+function regioTotaal(regio){ return regioSteden(regio).reduce((a,s)=>a+TYPEKEYS.reduce((x,t)=>x+cube(s,t),0),0); }
+function regioTipActief(regio){ return S.legacyActive.some(l=>l.id==='regiotip'&&l.regio===regio); }
+function checkTippingPoints(){
+  if(S.over || S.escN<1) return;
+  // Regionale overbelasting (Design Bible §27: regionale tipping points)
+  for(const regio of REGIONS){
+    if(S.over) return;
+    if(regioTipActief(regio)) continue;
+    const tot=regioTotaal(regio), dr=regioDrempel(regio);
+    if(tot>=dr){
+      S.legacyActive.push({id:'regiotip', regio});
+      log(`🌐 <b>REGIONALE TIPPING POINT: ${regio}</b> — ${tot} blokjes (drempel ${dr}). Pressure-kaarten plaatsen hier nu 1 extra blokje.`, 'bad');
+      wijzigCascade(1, `regionale tipping point ${regio}`);
+      if(S.over) return;
+      wijzigSociaal(1, 'zichtbare regionale crisis vergroot draagvlak');
+      info('🌐 Regionale Tipping Point', `<p><b>${regio}</b> raakt overbelast: er liggen ${tot} crisisblokjes (drempel: ${dr}).</p><p>• Cascade Track +1<br>• Zolang de regio op/boven de drempel zit, plaatsen Pressure-kaarten hier <b>1 extra blokje</b>.</p><p class="reqline ok">Behandel de regio onder de ${dr} blokjes — dan dooft het extra effect uit.</p>`);
+    }
+  }
+  if(!legacyActief('arctic') && LDEF.arctic && !S._arcticDone && totaalCubes('ROOD')>=10 && !S.cures.energie){
+    S._arcticDone=true;
+    S.legacyActive.push({id:'arctic'});
+    log(`🧊 <b>TIPPING POINT: ARCTISCH.</b> 10+ rode blokjes op het bord — elke Escalation plaatst nu 1 extra 🔴.`, 'bad');
+    info('🧊 Tipping Point bereikt', `<p><b>Tipping Point: Arctisch</b></p><p>Er liggen 10 of meer rode blokjes op het bord. Het Arctisch systeem kantelt: <b>elke toekomstige Escalation plaatst ook 1 extra 🔴 rood blokje in de zwaarst belaste stad.</b></p><p class="reqline no">Neutraliseer via: Schone Energie Transitie.</p>`);
+  }
+  if(!legacyActief('famine') && !S._famineDone && !S.cures.eco && !S.cures.sociaal){
+    for(const regio of ['Zuid-Azië','Sub-Sahara Afrika']){
+      const geel = regioSteden(regio).reduce((a,s)=>a+cube(s,'GEEL'),0);
+      if(geel>=4){
+        S._famineDone=true;
+        S.legacyActive.push({id:'famine', regio});
+        log(`🌾 <b>DROUGHT & FAMINE SPIRAL</b> in ${regio}: gele Pressure-kaarten plaatsen daar nu 2 blokjes.`, 'bad');
+        info('🌾 Voedselspiraal', `<p><b>Drought & Famine Spiral — ${regio}</b></p><p>Er liggen 4+ gele blokjes in ${regio}. Elke gele Pressure-kaart in deze regio plaatst nu <b>2 blokjes in plaats van 1</b>.</p><p class="reqline no">Neutraliseer via: Ecologisch Herstel of Veerkrachtige Samenleving.</p>`);
+        break;
+      }
+    }
+  }
+}
+
+/* ── PRESSURE RESOLUTIE ──────────────────────────────────────── */
+const HLP = {
+  cube:(s,t,n)=>plaatsCubes(s,t,n),
+  econ:(d,r)=>wijzigEcon(d,r),
+  sociaal:(d,r)=>wijzigSociaal(d,r),
+  cascade:(d,r)=>wijzigCascade(d,r),
+  protest:(s,n)=>{ S.steden[s].protest+=n; log(`✊ ${n} protesttoken${n>1?'s':''} in ${s}.`, 'bad'); },
+};
+/* Generiek stadssilhouet voor de pressure-kaart-art */
+const SKYLINE='M0,150 L0,118 L14,118 L14,96 L26,96 L26,118 L38,118 L38,74 L50,74 L50,64 L58,64 L58,118 L72,118 L72,88 L88,88 L88,52 L98,52 L98,42 L106,42 L106,88 L120,88 L120,108 L138,108 L138,70 L152,70 L152,60 L160,60 L160,108 L176,108 L176,84 L192,84 L192,118 L204,118 L204,48 L216,48 L216,36 L224,36 L224,98 L240,98 L240,80 L256,80 L256,108 L270,108 L270,62 L284,62 L284,118 L300,118 L300,90 L316,90 L316,72 L328,72 L328,108 L344,108 L344,84 L356,84 L356,118 L372,118 L372,98 L386,98 L386,112 L400,112 L400,150 Z';
+function pkaartHTML(card, compActive, effectOverride){
+  const col=TYPES[card.type].color, ncol=NODEC[card.type];
+  const effect = effectOverride || (card.socialPrimair ? 'Sociale acceptatie −1' : `Plaats 1 ${TYPES[card.type].emoji} blokje`);
+  return `<div class="pcard" style="--c:${col};--cn:${ncol}">
+      <div class="pc-art" style="background:linear-gradient(180deg,#00000055,#00000000 45%),linear-gradient(160deg,${ncol},${col} 75%)">
+        <svg viewBox="0 0 400 150" preserveAspectRatio="xMidYMax slice"><path d="${SKYLINE}" fill="#140d08" opacity=".82"/></svg>
+        <div class="pc-eyebrow">${CITY[card.stad]?CITY[card.stad].region:''}</div>
+        <div class="pc-city">${card.stad}</div>
+      </div>
+      <div class="pc-body">
+        <div class="pc-badge"><i></i>${TYPES[card.type].label}</div>
+        <div class="pc-title">${card.titel}</div>
+        <div class="pc-effect">${effect}</div>
+        ${compActive?`<div class="pc-comp">⚠ Compound — ${card.comp.tekst}</div>`:''}
+      </div>
+      <div class="pc-foot"><span class="pc-type">${TYPES[card.type].label}</span><span>Planet Under Pressure</span><span class="pc-pr">Pressure</span></div>
+    </div>`;
+}
+function toonPressureKaart(card, compActive, effectOverride){
+  return new Promise(res=>{
+    const t=document.getElementById('ptoast');
+    t.innerHTML=pkaartHTML(card, compActive, effectOverride);
+    t.classList.add('show');
+    setTimeout(()=>{ t.classList.remove('show'); setTimeout(res,160); }, compActive?2100:1500);
+  });
+}
+function compoundGemuted(card){
+  if((card.type==='ROOD'||card.type==='ZWART') && S.cures.energie) return true;
+  if(card.type==='GROEN' && S.cures.eco) return true;
+  if(card.type==='GEEL' && S.cures.sociaal) return true;
+  return false;
+}
+function resolvePressure(cardId, setupAmount){
+  const card=PDEF[cardId];
+  S.laatstePressure=cardId;
+  if(!setupAmount) UI.flash={stad:card.stad, kind:'p'};
+  if(setupAmount){ // setup: alleen blokjes van het type
+    plaatsCubes(card.stad, card.type, setupAmount);
+    log(`🃏 Setup: ${card.stad} krijgt ${setupAmount} ${TYPES[card.type].emoji}.`, 'dim');
+    return;
+  }
+  let beschrijving = [];
+  // compound vóór primaire plaatsing (kaartenset-regel)
+  if(card.comp && !compoundGemuted(card) && card.comp.check(S)){
+    log(`🃏 <b>${card.stad} — ${card.titel}</b> ${TYPES[card.type].emoji} · <i>compound: ${card.comp.tekst}</i>`, 'bad');
+    card.comp.apply(HLP);
+    beschrijving.push('compound');
+  } else {
+    log(`🃏 <b>${card.stad} — ${card.titel}</b> ${TYPES[card.type].emoji}`, 'bad');
+  }
+  if(S.over) return;
+  if(card.socialPrimair){
+    wijzigSociaal(-1, card.titel);
+  } else {
+    let n=1;
+    const fam=legacyActief('famine');
+    if(card.type==='GEEL' && fam && CITY[card.stad].region===fam.regio){
+      n=2; log(`🌾 Famine Spiral: 2 blokjes i.p.v. 1.`, 'bad');
+    }
+    const cregio=CITY[card.stad].region;
+    if(regioTipActief(cregio) && regioTotaal(cregio)>=regioDrempel(cregio)){
+      n+=1; log(`🌐 Regionale overbelasting ${cregio}: +1 extra blokje.`, 'bad');
+    }
+    plaatsCubes(card.stad, card.type, n);
+  }
+  checkTippingPoints();
+}
+function trekPressure(){
+  if(S.pressureDeck.length===0){
+    S.pressureDeck=shuffle(S.pressureDiscard); S.pressureDiscard=[];
+    log('♻️ Pressure-aflegstapel opnieuw geschud.', 'sys');
+  }
+  return S.pressureDeck.pop();
+}
+
+/* ── ESCALATION ──────────────────────────────────────────────── */
+async function resolveEscalation(){
+  S.escN++;
+  const n=S.escN;
+  log(`🚨 <b>ESCALATION ${['I','II','III','IV','V','VI'][n-1]||n}</b> getrokken!`, 'bad');
+  await info(`🚨 Escalation ${['I','II','III','IV','V','VI'][n-1]||n}`,
+    `<div class="bigcard esc" style="--c:#C0392B"><div class="stripe"></div><div class="bname">Escalation ${['I','II','III','IV','V','VI'][n-1]||n}</div><div class="bdesc">① Increase — escalatietempo<br>② Infect — onderste Pressure-kaart, 3 blokjes<br>③ Intensify — aflegstapel terug bovenop<br>④ Crisis Surge — verrassingskaart${n>=3?'<br>⑤ ⚠️ Immediate Legacy':''}</div><div class="bfoot">Planet Under Pressure</div></div>`);
+
+  // Emergency Coalition (reactief event)
+  let skipLegacy=false;
+  for(const p of S.players){
+    const idx=p.hand.indexOf('EV:coalition');
+    if(idx>=0 && !S.over){
+      const keuze = await showModal({
+        title:'🤝 Emergency Coalition',
+        html:`<p><b>${p.naam}</b> heeft <b>Emergency Coalition</b> in de hand. Nu spelen, vóór de Escalation wordt afgehandeld?</p>`,
+        buttons:[
+          {label:'Negeer de Legacy-stap', value:'legacy', cls:'good'},
+          {label:'Cascade Track −1', value:'cascade', cls:'good', disabled:S.cascade===0},
+          {label:'Niet spelen', value:null},
+        ]});
+      if(keuze){
+        p.hand.splice(idx,1); S.playerDiscard.push('EV:coalition');
+        if(keuze==='legacy'){ skipLegacy=true; log(`🤝 Emergency Coalition: Legacy-stap van deze Escalation wordt genegeerd.`, 'good'); }
+        else { wijzigCascade(-1,'Emergency Coalition'); }
+      }
+      break;
+    }
+  }
+  if(S.over) return;
+
+  // ① Increase
+  const rates=RATES[S.diff];
+  const rate=rates[Math.min(n,rates.length)-1];
+  log(`① Increase: escalatietempo is nu <b>${rate}</b>.`, 'sys');
+  // Adaptation Center-schilden herstellen bij elke Escalation
+  CITIES.forEach(c=>{ if(S.steden[c.name].gebouw==='A' && S.steden[c.name].adaptUsed){ S.steden[c.name].adaptUsed=false; log(`🛡️ Adaptation Center in ${c.name}: schild hersteld.`, 'good'); } });
+
+  // ② Infect — onderste kaart, 3 blokjes
+  if(S.pressureDeck.length===0){ S.pressureDeck=shuffle(S.pressureDiscard); S.pressureDiscard=[]; }
+  const bottom=S.pressureDeck.shift();
+  const bc=PDEF[bottom];
+  log(`② Infect: onderste Pressure-kaart is <b>${bc.stad}</b> — 3 ${TYPES[bc.type].emoji} blokjes.`, 'bad');
+  await toonPressureKaart(bc, false, `ESCALATION · plaats 3 ${TYPES[bc.type].emoji} blokjes`);
+  plaatsCubes(bc.stad, bc.type, 3);
+  render();
+  S.pressureDiscard.push(bottom);
+  if(S.over) return;
+
+  // ③ Intensify
+  S.pressureDeck=[...S.pressureDeck, ...shuffle(S.pressureDiscard)];
+  S.pressureDiscard=[];
+  log('③ Intensify: aflegstapel geschud en bovenop het Pressure Deck gelegd.', 'sys');
+
+  // ④ Crisis Surge
+  if(S.surgeDeck.length>0 && !S.over){
+    const sid=S.surgeDeck.pop();
+    const sc=SDEF[sid];
+    const compound = sc.check(S);
+    log(`④ <b>CRISIS SURGE: ${sc.titel}</b> (${sc.stad}) — ${compound?'compound!':'fallback'}`, 'bad');
+    await info(`⚡ Crisis Surge — ${sc.titel}`,
+      `<div class="bigcard" style="--c:${TYPES[sc.type].color}"><div class="stripe"></div><div class="bname">${sc.titel}</div><div class="bregion">${sc.stad} · ${CITY[sc.stad].region}</div><div class="bdesc"><b>${compound?'⚠️ Compound':'Fallback'}:</b> ${compound?sc.compTekst:('Plaats 1 '+TYPES[sc.type].emoji+' in '+sc.stad)}<br><span style="color:#999">(${sc.condTekst} → compound)</span></div><div class="bfoot">Crisis Surge</div></div>`);
+    if(compound) sc.compound(HLP);
+    else plaatsCubes(sc.stad, sc.type, 1);
+  }
+  if(S.over) return;
+
+  // Tipping point: Arctisch — extra rood bij elke escalation
+  if(legacyActief('arctic')){
+    let max=-1, doel=null;
+    CITIES.forEach(c=>{ if(S.steden[c.name].cubes.ROOD>max){max=S.steden[c.name].cubes.ROOD;doel=c.name;} });
+    log(`🧊 Arctisch tipping point: 1 extra 🔴 in ${doel}.`, 'bad');
+    plaatsCubes(doel,'ROOD',1);
+  }
+  if(S.over) return;
+
+  // ⑤ Immediate Legacy (Escalation 3+)
+  if(n>=3 && !skipLegacy){
+    await trekLegacy(n);
+  }
+  if(S.over) return;
+
+  // Escalation V+: extra cascade
+  if(n>=5) wijzigCascade(1, `Escalation ${n}`);
+  if(S.over) return;
+
+  // Verliesregel: economie 0 + Escalation
+  if(S.economie===0){
+    verlies('De economie stond op 0 toen een Escalation toesloeg: het systeem heeft geen veerkracht meer.');
+    return;
+  }
+  checkTippingPoints();
+}
+
+async function trekLegacy(escNum){
+  const eligible=S.legacyDeck.filter(id=>{
+    const d=LDEF[id];
+    return d.cond && d.cond(Math.min(escNum,5)) && (!d.extra || d.extra(S));
+  });
+  if(eligible.length===0){ log('⑤ Geen Immediate Legacy-kaart van toepassing.', 'dim'); return; }
+  const id=eligible[Math.floor(Math.random()*eligible.length)];
+  S.legacyDeck=S.legacyDeck.filter(x=>x!==id);
+  await activeerLegacy(id);
+}
+
+async function activeerLegacy(id){
+  const d=LDEF[id];
+  const rec={id};
+  let detail='';
+  const regioMet=(type)=>{ let best=REGIONS[0],max=-1; REGIONS.forEach(r=>{const t=regioSteden(r).reduce((a,s)=>a+cube(s,type),0); if(t>max){max=t;best=r;}}); return best; };
+  const drukSteden=(n)=>{ return [...CITIES].sort((a,b)=>{const ta=TYPEKEYS.reduce((x,t)=>x+cube(b.name,t),0)-TYPEKEYS.reduce((x,t)=>x+cube(a.name,t),0); return ta;}).slice(0,n).map(c=>c.name); };
+  switch(id){
+    case 'lockin': rec.regio=regioMet('ZWART'); break;
+    case 'backlash': rec.steden=drukSteden(2); rec.steden.forEach(s=>S.steden[s].protest++); wijzigSociaal(-1,'Social Backlash'); detail=`Protest in ${rec.steden.join(' en ')}.`; break;
+    case 'biodiv': rec.regio=regioMet('GROEN'); break;
+    case 'aigov': rec.expires=S.round+2; wijzigEcon(-1,'AI Governance Failure'); break;
+    case 'protestwave': rec.steden=drukSteden(3); rec.steden.forEach(s=>S.steden[s].protest++); wijzigSociaal(-2,'Protest Wave'); detail=`Protest in ${rec.steden.join(', ')}.`; break;
+    case 'govbreak': rec.expires=S.round+3; wijzigEcon(1,'Governance Breakthrough'); break;
+    case 'resilience': rec.regio=regioMet('ROOD'); rec.used=false; break;
+    case 'justtrans': wijzigSociaal(1,'Just Transition Pact'); break;
+    case 'renewboom': rec.expires=S.round+2; wijzigEcon(1,'Renewable Energy Boom'); break;
+    case 'aid': wijzigCascade(-1,'International Aid Framework'); break;
+  }
+  S.legacyActive.push(rec);
+  const kleur = d.soort==='neg' ? '#C0392B' : '#2E7D32';
+  log(`⑤ <b>IMMEDIATE LEGACY: ${d.titel}</b> — ${d.tekst(rec.regio||'')} ${detail}`, d.soort==='neg'?'bad':'good');
+  await info(`${d.soort==='neg'?'⚠️':'✨'} Immediate Legacy`,
+    `<div class="bigcard" style="--c:${kleur}"><div class="stripe"></div><div class="bname">${d.titel}</div><div class="bregion">${d.soort==='neg'?'Negatief effect':'Positief effect'}${rec.regio?' · '+rec.regio:''}</div><div class="bdesc">${d.tekst(rec.regio||'')}<br>${detail}${d.neutr?'<br><br><b>Neutraliseer via:</b> '+d.neutr:''}</div><div class="bfoot">One-shot Legacy</div></div>`);
+}
+
+function verwijderLegacy(id){
+  const i=S.legacyActive.findIndex(l=>l.id===id);
+  if(i>=0){ S.legacyActive.splice(i,1); log(`🕊️ Legacy-effect <b>${LDEF[id].titel}</b> geneutraliseerd.`, 'good'); }
+}
+
+/* ── WIN / VERLIES ───────────────────────────────────────────── */
+function verlies(reden){
+  if(S.over) return;
+  S.over={win:false,reden};
+  toonEinde();
+}
+function winst(){
+  S.over={win:true,reden:'Alle vier de mondiale doorbraken zijn gerealiseerd. De wereld is niet "klaar" — maar het systeem kan nu zichzelf herstellen.'};
+  toonEinde();
+}
+function toonEinde(){
+  render();
+  document.getElementById('endtitle').textContent = S.over.win ? '🌍 DOORBRAAK!' : '💀 SYSTEEMCRISIS';
+  document.getElementById('endtitle').style.color = S.over.win ? '#2E7D32' : '#C0392B';
+  document.getElementById('endreason').textContent = S.over.reden;
+  document.getElementById('endoverlay').classList.add('show');
+}
+
+/* ── SETUP ───────────────────────────────────────────────────── */
+function bouwDecks(){
+  // Pressure deck
+  S.pressureDeck=shuffle(PRESSURE.map(p=>p.id));
+  // Startinfectie: 3×3, 3×2, 3×1
+  [3,3,3,2,2,2,1,1,1].forEach(n=>{
+    const id=S.pressureDeck.pop();
+    resolvePressure(id, n);
+    S.pressureDiscard.push(id);
+  });
+  // Player deck: 24 stad + 5 events
+  let basis=shuffle([...CITIES.map(c=>c.name), ...EVENTS.map(e=>'EV:'+e.id)]);
+  const startN={2:4,3:3,4:2}[S.players.length];
+  S.players.forEach(p=>{ for(let i=0;i<startN;i++) p.hand.push(basis.pop()); });
+  // Escalations verdelen
+  const stapels=[]; const E=S.diff;
+  const per=Math.floor(basis.length/E); let rest=basis.length%E;
+  let idx=0;
+  for(let i=0;i<E;i++){
+    const size=per+(i<rest?1:0);
+    const st=basis.slice(idx,idx+size); idx+=size;
+    st.push('ESCALATION');
+    stapels.push(shuffle(st));
+  }
+  S.playerDeck=stapels.flat(); // trekken via pop() = einde array is bovenkant; stapel 1 bovenop:
+  S.playerDeck.reverse();
+}
+
+function startSpel(spelers, diff, rolKeuzes){
+  S=nieuwState(spelers,diff,rolKeuzes);
+  log(`<b>— PLANET UNDER PRESSURE —</b> ${spelers.length} spelers · ${diff} Escalations.`, 'sys');
+  bouwDecks();
+  S.players.forEach(p=>log(`${p.naam} speelt als <b>${rolVan(p).naam}</b>.`, 'sys'));
+  log(`Iedereen start in <b>${START_STAD}</b>. ${curP().naam} is als eerste aan de beurt.`, 'sys');
+  document.getElementById('setup').style.display='none';
+  render();
+}
+
+/* ── BEURTVERLOOP ────────────────────────────────────────────── */
+function gebruikActie(n=1){
+  S.actions-=n;
+  render();
+}
+async function eindeActies(){
+  if(S.over) return;
+  UI.mode=null;
+  S.phase='trekken';
+  render();
+  const p=curP();
+  // 2 kaarten trekken
+  for(let i=0;i<2;i++){
+    if(S.over) return;
+    if(S.playerDeck.length===0){
+      verlies('Het Player Deck is op voordat alle vier doorbraken zijn behaald: de tijd is verstreken.');
+      return;
+    }
+    const k=S.playerDeck.pop();
+    if(kaartIsEsc(k)){
+      await resolveEscalation();
+      if(S.over) return;
+    } else {
+      p.hand.push(k);
+      const isEv=kaartIsEvent(k);
+      const naam=isEv?EDEF[eventId(k)].naam:k;
+      const kleur=isEv?'#D4A017':TYPES[CITY[k].type].color;
+      log(`🂠 ${p.naam} trekt handkaart <b>${naam}</b>.`, 'dim');
+      await info('Handkaart getrokken', isEv
+        ? `<div class="bigcard" style="--c:#D4A017"><div class="stripe"></div><div class="bname">${EDEF[eventId(k)].naam}</div><div class="bregion">EVENT</div><div class="bdesc">${EDEF[eventId(k)].desc}</div><div class="bfoot">Event Card</div></div>`
+        : `<div class="bigcard" style="--c:${kleur}"><div class="stripe"></div><div class="bname">${k}</div><div class="bregion">${CITY[k].region}</div><div class="bdesc">${TYPES[CITY[k].type].emoji} ${TYPES[CITY[k].type].label}<br><br>Gebruik voor: reizen · bouwen · doorbraken · delen</div><div class="bfoot">Stadkaart</div></div>`);
+    }
+    render();
+  }
+  await handlimiet(p);
+  if(S.over) return;
+  // Pressure-fase
+  S.phase='pressure';
+  render();
+  const rates=RATES[S.diff];
+  const rate=rates[Math.min(Math.max(S.escN,1),rates.length)-1];
+  log(`🌡️ Pressure-fase: ${rate} kaarten.`, 'sys');
+  for(let i=0;i<rate;i++){
+    if(S.over) return;
+    const id=trekPressure();
+    const card=PDEF[id];
+    const compActive = !!(card.comp && !compoundGemuted(card) && card.comp.check(S));
+    await toonPressureKaart(card, compActive);
+    resolvePressure(id);
+    S.pressureDiscard.push(id);
+    render();
+    await new Promise(r=>setTimeout(r,250));
+  }
+  if(S.over) return;
+  volgendeSpeler();
+}
+async function handlimiet(p){
+  while(p.hand.length>HAND_LIMIT && !S.over){
+    await showModal({
+      title:`Handlimiet — ${p.naam}`,
+      html:`<p>Je hebt ${p.hand.length} kaarten (max ${HAND_LIMIT}). Klik een kaart om af te leggen.</p><div class="cardpickrow" id="hlrow"></div>`,
+      buttons:[],
+      render:(body,done)=>{
+        const row=body.querySelector('#hlrow');
+        p.hand.forEach((k,i)=>{
+          const el=maakPickCard(k);
+          el.onclick=()=>{
+            p.hand.splice(i,1); S.playerDiscard.push(k);
+            log(`🗑️ ${p.naam} legt ${kaartIsEvent(k)?EDEF[eventId(k)].naam:k} af (handlimiet).`, 'dim');
+            done(true);
+          };
+          row.appendChild(el);
+        });
+      }
+    });
+    render();
+  }
+}
+function volgendeSpeler(){
+  const p=curP();
+  p.usedPeek=false; p.usedDiplomat=false; p.usedEconShield=false; p.usedFreeBuild=false;
+  S.cur=(S.cur+1)%S.players.length;
+  if(S.cur===0){
+    S.round++;
+    // gebouw-effecten bij rondestart
+    if(CITIES.some(c=>S.steden[c.name].gebouw==='H')) wijzigEcon(1,'Economic & Social Hub');
+    CITIES.filter(c=>S.steden[c.name].gebouw==='N').forEach(c=>{
+      let doel=null,max=0;
+      [c.name,...c.conns].forEach(s=>{ if(cube(s,'GROEN')>max){max=cube(s,'GROEN');doel=s;} });
+      if(doel){ verwijderCube(doel,'GROEN',1); log(`🌿 Ecosystem Recovery Zone (${c.name}) herstelt 1 groen blokje in ${doel}.`, 'good'); }
+    });
+    // verlopen tijdelijke legacies
+    S.legacyActive=S.legacyActive.filter(l=>{
+      if(l.expires && S.round>=l.expires){
+        log(`⌛ Legacy-effect <b>${LDEF[l.id].titel}</b> is uitgewerkt.`, 'sys');
+        return false;
+      }
+      return true;
+    });
+  }
+  S.actions=4;
+  S.phase='acties';
+  log(`▶️ <b>${curP().naam}</b> (${rolVan(curP()).naam}) is aan de beurt. Ronde ${S.round}.`, 'sys');
+  render();
+}
+
+/* ── ACTIES ──────────────────────────────────────────────────── */
+function zetHint(txt){
+  document.getElementById('hinttext').textContent=txt;
+  document.getElementById('hint').classList.add('show');
+}
+function wisHint(){ document.getElementById('hint').classList.remove('show'); UI.mode=null; UI.modeData=null; render(); }
+
+function actieBeweeg(){
+  UI.mode='move';
+  zetHint('Klik een verbonden stad om naartoe te reizen');
+  render();
+}
+function actieShuttle(){
+  UI.mode='shuttle';
+  zetHint('Shuttle: klik een andere stad met een gebouw');
+  render();
+}
+function shuttleDoelen(){
+  const p=curP();
+  const hier=S.steden[p.stad].gebouw;
+  if(!hier) return [];
+  const ai=legacyActief('aigov');
+  if(ai && hier==='R') return [];
+  return gebouwSteden().filter(s=>s!==p.stad && !(ai && S.steden[s].gebouw==='R'));
+}
+async function actieBehandel(){
+  const p=curP();
+  const c=S.steden[p.stad];
+  const aanwezig=TYPEKEYS.filter(t=>c.cubes[t]>0);
+  if(aanwezig.length===0) return;
+  let type=aanwezig[0];
+  if(aanwezig.length>1){
+    type = await showModal({
+      title:'Behandel crisis — kies type',
+      html:'<p>Welke crisis pak je aan in '+p.stad+'?</p>',
+      buttons:aanwezig.map(t=>({label:`${TYPES[t].emoji} ${TYPES[t].label} (${c.cubes[t]})`, value:t})).concat([{label:'Annuleer',value:null}])
+    });
+    if(!type) return;
+  }
+  let n=1;
+  if(S.cures[CUREMAP[type]] || p.rol==='responder') n=3;
+  else {
+    if(p.rol==='engineer' && (type==='ROOD'||type==='ZWART')) n=2;
+    if(type==='ROOD' && legacyActief('renewboom')) n=Math.max(n,2);
+    if((type==='ROOD'||type==='ZWART') && c.gebouw==='E'){ n+=1; log(`⚡ Energy Transition Site versterkt de behandeling (+1).`, 'good'); }
+  }
+  const x=verwijderCube(p.stad,type,n);
+  log(`🧹 ${p.naam} behandelt ${TYPES[type].emoji} in ${p.stad}: −${x} blokje${x>1?'s':''}.`, 'good');
+  gebruikActie();
+}
+function bouwKosten(letter, stad){
+  const p=curP();
+  let econ=1;
+  if(p.rol==='engineer' && !p.usedFreeBuild) econ=0;
+  if(letter==='E'){
+    if(S.sociaal<=1 && !legacyActief('justtrans')) econ+=1;
+    const lock=legacyActief('lockin');
+    if(lock && CITY[stad].region===lock.regio) econ+=1;
+  }
+  if(S.steden[stad].protest>0) econ+=1;
+  return econ;
+}
+async function actieBouw(gratis){
+  const p=curP();
+  const stad=p.stad;
+  const c=S.steden[stad];
+  if(c.gebouw){ await info('Bouwen','Deze stad heeft al een gebouw (max 1 per stad).'); return; }
+  if(gebouwSteden().length>=MAX_GEBOUWEN){ await info('Bouwen',`Maximaal ${MAX_GEBOUWEN} gebouwen tegelijk op het bord.`); return; }
+  const heeftKaart=p.hand.includes(stad);
+  let html='<p>Bouwen in <b>'+stad+'</b>'+(gratis?' — <b>gratis via Green Bonds</b>':' kost: 1 actie + stadskaart '+stad+' + economie')+'.</p>';
+  const buttons=Object.entries(GEBOUWEN).map(([L,g])=>{
+    const kost=gratis?0:bouwKosten(L,stad);
+    const kan = gratis || (heeftKaart && S.economie>=kost);
+    return {label:`${L} · ${g.naam}${gratis?'':' · '+kost+' econ'}`, value:L, disabled:!kan};
+  });
+  buttons.push({label:'Annuleer',value:null});
+  let uitleg='<div style="margin-top:8px">'+Object.entries(GEBOUWEN).map(([L,g])=>`<div class="reqline">${ic(g.icon,13)} <b>${g.naam} (${L})</b> — ${g.desc}</div>`).join('')+'</div>';
+  if(!gratis && !heeftKaart) uitleg+='<p class="reqline no">Je hebt de stadskaart van '+stad+' niet in je hand.</p>';
+  const L=await showModal({title:'🏗️ Bouw een gebouw', html:html+uitleg, buttons});
+  if(!L) return;
+  if(!gratis){
+    const kost=bouwKosten(L,stad);
+    if(p.rol==='engineer' && !p.usedFreeBuild) p.usedFreeBuild=true;
+    p.hand.splice(p.hand.indexOf(stad),1); S.playerDiscard.push(stad);
+    if(kost>0) wijzigEcon(-kost,'bouw '+GEBOUWEN[L].naam);
+  }
+  c.gebouw=L;
+  log(`🏗️ ${p.naam} bouwt <b>${GEBOUWEN[L].naam}</b> in ${stad}.`, 'good');
+  if(!gratis) gebruikActie(); else render();
+}
+async function actieDeel(){
+  const p=curP();
+  const hier=S.players.filter(q=>q!==p && q.stad===p.stad);
+  if(hier.length===0) return;
+  const vrij = S.cures.governance || legacyActief('aid');
+  const opties=[];
+  for(const q of hier){
+    for(const k of p.hand){
+      if(kaartIsEvent(k)) continue;
+      if(k===p.stad || vrij || p.rol==='diplomat') opties.push({geef:true, partner:q, kaart:k});
+    }
+    for(const k of q.hand){
+      if(kaartIsEvent(k)) continue;
+      if(k===p.stad || vrij || q.rol==='diplomat') opties.push({geef:false, partner:q, kaart:k});
+    }
+  }
+  if(opties.length===0){ await info('Kennis delen','Geen geldige overdracht mogelijk. Normaal mag alleen de kaart van de stad waar jullie samen staan gedeeld worden (Diplomat en Mondiale Samenwerking versoepelen dit).'); return; }
+  const gratisDelen = legacyActief('govbreak') || legacyActief('aid');
+  const keuze=await showModal({
+    title:'🤝 Kennis delen'+(gratisDelen?' (gratis door legacy-effect)':''),
+    html:'<div id="deelopties"></div>',
+    buttons:[{label:'Annuleer', value:null}],
+    render:(body,done)=>{
+      const div=body.querySelector('#deelopties');
+      opties.forEach(o=>{
+        const b=document.createElement('button');
+        b.className='optbtn';
+        b.innerHTML=`<b>${o.geef?'GEEF':'NEEM'}</b> ${o.kaart} ${o.geef?'aan':'van'} ${o.partner.naam}`;
+        b.onclick=()=>done(o);
+        div.appendChild(b);
+      });
+    }
+  });
+  if(!keuze) return;
+  const van = keuze.geef ? p : keuze.partner;
+  const naar = keuze.geef ? keuze.partner : p;
+  van.hand.splice(van.hand.indexOf(keuze.kaart),1);
+  naar.hand.push(keuze.kaart);
+  log(`🤝 ${van.naam} geeft <b>${keuze.kaart}</b> aan ${naar.naam}.`, 'good');
+  if(!gratisDelen) gebruikActie(); else render();
+  await handlimiet(naar);
+  render();
+}
+function cureKaartEis(cureId){
+  // Digitale balans: 4 kaarten basis (designdoc-tuningregel), 3 met passende rol.
+  const p=curP();
+  if(p.rol==='scientist' && (cureId==='energie'||cureId==='eco')) return 3;
+  if(p.rol==='economist' && (cureId==='sociaal'||cureId==='governance')) return 3;
+  return 4;
+}
+function cureCheck(cureId){
+  const p=curP();
+  const g=S.steden[p.stad].gebouw;
+  const ai=legacyActief('aigov');
+  const res={ok:true, regels:[]};
+  const reg=(ok,txt)=>{res.regels.push({ok,txt}); if(!ok)res.ok=false;};
+  if(cureId==='energie'){
+    const gOk=(g==='R'&&!ai)||g==='E';
+    reg(gOk,'Sta in een stad met Research Hub (R) of Energy Transition Site (E)'+(ai&&g==='R'?' (Research Hub geblokkeerd door AI Governance Failure!)':''));
+    reg(S.economie>=2,'Economische capaciteit ≥ 2 (nu '+S.economie+')');
+  }
+  if(cureId==='eco') reg(g==='N','Sta in een stad met Ecosystem Recovery Zone (N)');
+  if(cureId==='sociaal'){
+    reg(g==='A'||g==='H','Sta in een stad met Adaptation Center (A) of Economic & Social Hub (H)');
+    reg(S.sociaal>=4,'Sociale acceptatie ≥ 4 (nu '+S.sociaal+')');
+  }
+  if(cureId==='governance') reg(g==='H','Sta in een stad met Economic & Social Hub (H)');
+  return res;
+}
+function cureKaartenGeldig(cureId, kaarten){
+  const n=cureKaartEis(cureId);
+  if(kaarten.length!==n) return {ok:false, msg:`Selecteer precies ${n} stadkaarten.`};
+  const regios=new Set(kaarten.map(k=>CITY[k].region));
+  const eis3=Math.min(3,n), eis4=Math.min(4,n);
+  if(cureId==='energie' && regios.size<eis3) return {ok:false,msg:`Kaarten uit minimaal ${eis3} macroregio’s nodig.`};
+  if(cureId==='sociaal' && regios.size<eis3) return {ok:false,msg:`Kaarten uit minimaal ${eis3} macroregio’s nodig.`};
+  if(cureId==='governance' && regios.size<eis4) return {ok:false,msg:`Kaarten uit minimaal ${eis4} macroregio’s nodig.`};
+  if(cureId==='eco'){
+    const eco=kaarten.filter(k=>ECO_REGIONS.includes(CITY[k].region)).length;
+    if(eco<2) return {ok:false,msg:'Minimaal 2 kaarten uit Latijns-Amerika, Sub-Sahara Afrika of ZO-Azië & Oceanië.'};
+  }
+  return {ok:true,msg:'✓ Voorwaarden vervuld — doorbraak mogelijk!'};
+}
+async function actieDoorbraak(){
+  const p=curP();
+  const open=CURES.filter(c=>!S.cures[c.id]);
+  const cureId=await showModal({
+    title:'💡 Doorbraak realiseren',
+    html:open.map(c=>{
+      const chk=cureCheck(c.id);
+      return `<div class="cure" style="--c:${TYPES[c.type].color};margin-bottom:8px"><div class="cicon">${ic(c.icon,15)}</div><div class="cname">${c.naam}<div style="font-family:Barlow;text-transform:none;letter-spacing:0;font-size:11px;color:#999;margin-top:2px">${c.reqText}</div>${chk.regels.map(r=>`<div class="reqline ${r.ok?'ok':'no'}" style="font-family:Barlow;text-transform:none;letter-spacing:0">${r.ok?'✓':'✗'} ${r.txt}</div>`).join('')}</div></div>`;
+    }).join(''),
+    buttons:open.map(c=>({label:c.naam, value:c.id, disabled:!cureCheck(c.id).ok})).concat([{label:'Annuleer',value:null}])
+  });
+  if(!cureId) return;
+  const n=cureKaartEis(cureId);
+  const stadskaarten=p.hand.filter(k=>!kaartIsEvent(k));
+  const sel=new Set();
+  const gekozen=await showModal({
+    title:`Kies ${n} stadkaarten`,
+    html:`<p id="curemsg" class="reqline no">Selecteer precies ${n} stadkaarten.</p><div class="cardpickrow" id="curerow"></div>`,
+    buttons:[{label:'Annuleer', value:null}],
+    render:(body,done)=>{
+      const row=body.querySelector('#curerow');
+      const msg=body.querySelector('#curemsg');
+      const foot=document.getElementById('mfoot');
+      const confirm=document.createElement('button');
+      confirm.className='mbtn good'; confirm.textContent='💡 Realiseer doorbraak'; confirm.disabled=true;
+      confirm.onclick=()=>{ document.getElementById('modalroot').classList.remove('show'); done([...sel]); };
+      foot.prepend(confirm);
+      stadskaarten.forEach(k=>{
+        const el=maakPickCard(k);
+        el.onclick=()=>{
+          if(sel.has(k)) sel.delete(k); else sel.add(k);
+          el.classList.toggle('sel');
+          const v=cureKaartenGeldig(cureId,[...sel]);
+          msg.textContent=v.msg;
+          msg.className='reqline '+(v.ok?'ok':'no');
+          confirm.disabled=!v.ok;
+        };
+        row.appendChild(el);
+      });
+    }
+  });
+  if(!gekozen) return;
+  gekozen.forEach(k=>{ p.hand.splice(p.hand.indexOf(k),1); S.playerDiscard.push(k); });
+  S.cures[cureId]=true;
+  S.players.filter(q=>q.rol==='responder').forEach(q=>medicCheck(q));
+  const cd=CURES.find(c=>c.id===cureId);
+  log(`💡 <b>DOORBRAAK: ${cd.naam}!</b> ${cd.effectText}`, 'good');
+  // cure-effecten op legacies
+  if(cureId==='energie'){ verwijderLegacy('lockin'); verwijderLegacy('arctic'); }
+  if(cureId==='eco'){ verwijderLegacy('biodiv'); verwijderLegacy('famine'); }
+  if(cureId==='sociaal'){
+    verwijderLegacy('backlash'); verwijderLegacy('protestwave'); verwijderLegacy('famine');
+    wijzigSociaal(1, 'Veerkrachtige Samenleving');
+    if(S.legacyDeck.includes('justtrans')){} // justtrans is auto
+    if(!legacyActief('justtrans')){ await activeerLegacy('justtrans'); }
+  }
+  gebruikActie();
+  await info('🎉 Doorbraak gerealiseerd!',
+    `<div class="bigcard" style="--c:${TYPES[cd.type].color}"><div class="stripe"></div><div class="bname">${cd.naam}</div><div class="bregion">MONDIALE DOORBRAAK</div><div class="bdesc">${cd.effectText}</div><div class="bfoot">Doorbraak ${Object.values(S.cures).filter(Boolean).length}/4</div></div>`);
+  if(Object.values(S.cures).every(Boolean)){ winst(); return; }
+  render();
+}
+async function actieCampagne(){
+  const gratis = S.steden[curP().stad].gebouw==='H';
+  if(!gratis && S.economie<1) return;
+  if(!gratis) wijzigEcon(-1,'sociale campagne');
+  wijzigSociaal(1,'sociale campagne'+(gratis?' (gratis bij Economic & Social Hub)':''));
+  gebruikActie();
+}
+async function actieProtest(){
+  const p=curP();
+  const c=S.steden[p.stad];
+  if(c.protest>0){
+    c.protest--;
+    log(`🕊️ ${p.naam} de-escaleert protest in ${p.stad}.`, 'good');
+    if(!S.cures.sociaal) gebruikActie(); else render();
+    return;
+  }
+  // Vanuit een stad met gebouw mag je overal de-escaleren (infrastructuurnetwerk)
+  if(c.gebouw && CITIES.some(x=>S.steden[x.name].protest>0)){
+    UI.mode='protest-remote';
+    zetHint('Klik een stad met protest (oranje !) om daar te de-escaleren');
+    render();
+  }
+}
+async function actieDiplomat(){
+  const p=curP();
+  if(p.rol!=='diplomat'||p.usedDiplomat) return;
+  p.usedDiplomat=true;
+  wijzigSociaal(1,'diplomatieke inzet');
+  gebruikActie();
+}
+function kanPeek(p){
+  if(p.usedPeek) return false;
+  if(p.rol==='scientist') return true;
+  return S.steden[p.stad].gebouw==='R' && !legacyActief('aigov');
+}
+async function actiePeek(){
+  const p=curP();
+  if(!kanPeek(p)) return;
+  p.usedPeek=true;
+  const top=S.pressureDeck[S.pressureDeck.length-1];
+  if(top===undefined){ await info('Analyse','Het Pressure Deck is leeg (wordt herschud bij de volgende trek).'); render(); return; }
+  const c=PDEF[top];
+  log(`🔭 ${p.naam} analyseert de bovenste Pressure-kaart.`, 'dim');
+  const compActive = !!(c.comp && !compoundGemuted(c) && c.comp.check(S));
+  await info('🔭 Systeemanalyse — volgende Pressure-kaart',
+    `<p style="margin-bottom:8px;color:var(--muted)">Dit is de bovenste kaart van het Pressure-deck: de volgende kaart die blokjes gaat toevoegen.</p>
+     <div style="display:flex;justify-content:center">${pkaartHTML(c, compActive)}</div>`);
+  render();
+}
+async function actieNeutraliseer(){
+  if(!S.cures.governance || S.economie<1) return;
+  const neg=S.legacyActive.filter(l=>LDEF[l.id].soort==='neg');
+  if(neg.length===0){ await info('Neutraliseren','Er zijn geen actieve negatieve legacy-effecten.'); return; }
+  const id=await showModal({
+    title:'🌍 Legacy neutraliseren (1 actie + 1 economie)',
+    html:'<p>Mondiale Samenwerking maakt het mogelijk om structurele lock-ins te doorbreken.</p>',
+    buttons:neg.map(l=>({label:LDEF[l.id].titel, value:l.id})).concat([{label:'Annuleer',value:null}])
+  });
+  if(!id) return;
+  wijzigEcon(-1,'neutralisatie');
+  verwijderLegacy(id);
+  gebruikActie();
+}
+async function actieScientistFix(){
+  const p=curP();
+  if(p.rol!=='scientist'||!legacyActief('aigov')) return;
+  const stadskaarten=p.hand;
+  if(stadskaarten.length===0){ await info('Neutraliseren','Je hebt geen kaart om in te leveren.'); return; }
+  const k=await showModal({
+    title:'🔬 AI Governance Failure neutraliseren (1 actie + 1 kaart)',
+    html:'<p>Kies een kaart om in te leveren.</p><div class="cardpickrow" id="sfrow"></div>',
+    buttons:[{label:'Annuleer',value:null}],
+    render:(body,done)=>{
+      const row=body.querySelector('#sfrow');
+      p.hand.forEach(kk=>{ const el=maakPickCard(kk); el.onclick=()=>done(kk); row.appendChild(el); });
+    }
+  });
+  if(!k) return;
+  p.hand.splice(p.hand.indexOf(k),1); S.playerDiscard.push(k);
+  verwijderLegacy('aigov');
+  gebruikActie();
+}
+
+/* ── EVENTS SPELEN ───────────────────────────────────────────── */
+async function speelEvent(evId, handIdx){
+  const p=curP();
+  const ev=EDEF[evId];
+  if(ev.kost>0 && S.actions<ev.kost){ await info(ev.naam,'Niet genoeg acties over.'); return; }
+  if(evId==='coalition'){ await info(ev.naam,'Dit event speel je reactief: het wordt automatisch aangeboden zodra een Escalation-kaart wordt getrokken.'); return; }
+
+  if(evId==='leak'){
+    const optie=await showModal({title:'🛠️ Rapid Leak Repair', html:'<p>'+ev.desc+'</p>', buttons:[
+      {label:'2 ⚫ uit één stad', value:'een'},
+      {label:'1 ⚫ uit 2 verbonden steden', value:'twee'},
+      {label:'Annuleer', value:null}]});
+    if(!optie) return;
+    if(optie==='een'){
+      const doelen=CITIES.filter(c=>cube(c.name,'ZWART')>0);
+      if(doelen.length===0){ await info(ev.naam,'Er liggen nergens zwarte blokjes.'); return; }
+      UI.mode='ev-leak1'; zetHint('Klik een stad met ⚫ om 2 zwarte blokjes te verwijderen'); UI.modeData={handIdx}; render(); return;
+    } else {
+      UI.mode='ev-leak2a'; zetHint('Klik de eerste stad met ⚫'); UI.modeData={handIdx}; render(); return;
+    }
+  }
+  if(evId==='comm'){
+    const optie=await showModal({title:'📣 Public Communication Surge', html:'<p>'+ev.desc+'</p>', buttons:[
+      {label:'+1 sociale acceptatie', value:'soc'},
+      {label:'Verwijder 2 protesttokens', value:'protest', disabled:!CITIES.some(c=>S.steden[c.name].protest>0)},
+      {label:'Annuleer', value:null}]});
+    if(!optie) return;
+    verbruikEvent(handIdx);
+    if(optie==='soc') wijzigSociaal(1,'Public Communication Surge');
+    else {
+      let n=2;
+      for(const c of CITIES){ while(n>0 && S.steden[c.name].protest>0){ S.steden[c.name].protest--; n--; log(`🕊️ Protest verwijderd in ${c.name}.`, 'good'); } }
+    }
+    verwijderLegacy('backlash');
+    gebruikActie(ev.kost);
+  }
+  if(evId==='bonds'){
+    const optie=await showModal({title:'💶 Green Bonds Package', html:'<p>'+ev.desc+'</p>', buttons:[
+      {label:'+2 economie', value:'econ'},
+      {label:'Bouw gratis een gebouw hier', value:'bouw', disabled:!!S.steden[p.stad].gebouw||gebouwSteden().length>=MAX_GEBOUWEN},
+      {label:'Annuleer', value:null}]});
+    if(!optie) return;
+    verbruikEvent(handIdx);
+    if(optie==='econ') wijzigEcon(2,'Green Bonds Package');
+    else await actieBouw(true);
+    gebruikActie(ev.kost);
+  }
+  if(evId==='food'){
+    const optie=await showModal({title:'🌾 Strategic Food Release', html:'<p>'+ev.desc+'</p>', buttons:[
+      {label:'Alle 🟡 uit één stad', value:'stad'},
+      {label:'1 🟡 uit elke stad in een regio', value:'regio'},
+      {label:'Annuleer', value:null}]});
+    if(!optie) return;
+    if(optie==='stad'){ UI.mode='ev-food'; zetHint('Klik een stad om alle gele blokjes te verwijderen'); UI.modeData={handIdx}; render(); return; }
+    const regio=await showModal({title:'Kies macroregio', html:'', buttons:REGIONS.map(r=>({label:r,value:r})).concat([{label:'Annuleer',value:null}])});
+    if(!regio) return;
+    verbruikEvent(handIdx);
+    regioSteden(regio).forEach(s=>{ if(verwijderCube(s,'GEEL',1)>0) log(`🌾 1 🟡 verwijderd in ${s}.`, 'good'); });
+    gebruikActie(ev.kost);
+  }
+  render();
+}
+function verbruikEvent(handIdx){
+  const p=curP();
+  const k=p.hand[handIdx];
+  p.hand.splice(handIdx,1);
+  S.playerDiscard.push(k);
+  log(`🎴 ${p.naam} speelt <b>${EDEF[eventId(k)].naam}</b>.`, 'good');
+}
+
+/* ── STAD AANKLIKKEN (modes + direct klikken-om-te-verplaatsen) ── */
+function medicCheck(p){
+  if(p.rol!=='responder'||S.over) return;
+  TYPEKEYS.forEach(t=>{
+    if(S.cures[CUREMAP[t]] && cube(p.stad,t)>0){
+      const x=verwijderCube(p.stad,t,3);
+      log(`🚑 ${p.naam} wist ${x} ${TYPES[t].emoji} in ${p.stad} — gratis (doorbraak actief).`, 'good');
+    }
+  });
+}
+async function klikStad(naam){
+  const p=curP();
+  if(!UI.mode){
+    // direct klikken: verbonden stad = bewegen, eigen stad = behandelen
+    if(S.over||S.phase!=='acties'||S.actions<=0) return;
+    if(CITY[p.stad].conns.includes(naam)){
+      p.stad=naam; medicCheck(p);
+      log(`🚶 ${p.naam} reist naar ${naam}.`, 'dim');
+      gebruikActie();
+    } else if(naam===p.stad && TYPEKEYS.some(t=>cube(naam,t)>0)){
+      actieBehandel();
+    }
+    return;
+  }
+  const m=UI.mode;
+  if(m==='move'){
+    if(!CITY[p.stad].conns.includes(naam)) return;
+    p.stad=naam; medicCheck(p);
+    log(`🚶 ${p.naam} reist naar ${naam}.`, 'dim');
+    wisHint(); gebruikActie();
+  }
+  else if(m==='shuttle'){
+    if(!shuttleDoelen().includes(naam)) return;
+    p.stad=naam; medicCheck(p);
+    log(`🔁 ${p.naam} shuttlet naar ${naam}.`, 'dim');
+    wisHint(); gebruikActie();
+  }
+  else if(m==='charter'){
+    const k=UI.modeData.kaart;
+    p.hand.splice(p.hand.indexOf(k),1); S.playerDiscard.push(k);
+    p.stad=naam; medicCheck(p);
+    log(`🛫 ${p.naam} chartert van ${k} naar ${naam}.`, 'dim');
+    wisHint(); gebruikActie();
+  }
+  else if(m==='ev-leak1'){
+    if(cube(naam,'ZWART')===0) return;
+    verbruikEvent(UI.modeData.handIdx);
+    const x=verwijderCube(naam,'ZWART',2);
+    log(`🛠️ Rapid Leak Repair: −${x} ⚫ in ${naam}.`, 'good');
+    wisHint(); render();
+  }
+  else if(m==='ev-leak2a'){
+    if(cube(naam,'ZWART')===0) return;
+    UI.mode='ev-leak2b'; UI.modeData.eerste=naam;
+    zetHint('Klik een verbonden stad met ⚫'); render();
+  }
+  else if(m==='ev-leak2b'){
+    const eerste=UI.modeData.eerste;
+    if(naam===eerste || !CITY[eerste].conns.includes(naam) || cube(naam,'ZWART')===0) return;
+    verbruikEvent(UI.modeData.handIdx);
+    verwijderCube(eerste,'ZWART',1); verwijderCube(naam,'ZWART',1);
+    log(`🛠️ Rapid Leak Repair: −1 ⚫ in ${eerste} en ${naam}.`, 'good');
+    wisHint(); render();
+  }
+  else if(m==='ev-food'){
+    verbruikEvent(UI.modeData.handIdx);
+    const x=verwijderCube(naam,'GEEL',3);
+    log(`🌾 Strategic Food Release: −${x} 🟡 in ${naam}.`, 'good');
+    gebruikActie(1);
+    wisHint(); render();
+  }
+  else if(m==='protest-remote'){
+    if(S.steden[naam].protest===0) return;
+    S.steden[naam].protest--;
+    log(`🕊️ ${p.naam} de-escaleert protest in ${naam} via het infrastructuurnetwerk.`, 'good');
+    wisHint();
+    if(!S.cures.sociaal) gebruikActie(); else render();
+  }
+}
+
+/* ── HAND CONTEXT MENU ───────────────────────────────────────── */
+function toonCtx(e, idx){
+  const p=curP();
+  const k=p.hand[idx];
+  const menu=document.getElementById('ctxmenu');
+  menu.innerHTML='';
+  const kanActie = S.phase==='acties' && S.actions>0 && !S.over;
+  const voeg=(label,fn,disabled)=>{
+    const b=document.createElement('button');
+    b.textContent=label; b.disabled=!!disabled;
+    b.onclick=()=>{ menu.style.display='none'; fn(); };
+    menu.appendChild(b);
+  };
+  if(kaartIsEvent(k)){
+    const ev=EDEF[eventId(k)];
+    voeg(`🎴 Speel: ${ev.naam}`, ()=>speelEvent(eventId(k),idx), ev.reactief||(ev.kost>0&&!kanActie)||(ev.kost===0&&S.over));
+    if(ev.reactief) voeg('(reactief — speelt automatisch bij Escalation)', ()=>{}, true);
+  } else {
+    voeg(`✈️ Directe vlucht naar ${k}`, ()=>{
+      p.hand.splice(idx,1); S.playerDiscard.push(k);
+      p.stad=k; medicCheck(p);
+      log(`✈️ ${p.naam} vliegt direct naar ${k}.`, 'dim');
+      gebruikActie();
+    }, !kanActie || p.stad===k);
+    voeg(`🛫 Chartervlucht (vanaf ${k} naar elke stad)`, ()=>{
+      UI.mode='charter'; UI.modeData={kaart:k};
+      zetHint('Charter: klik een willekeurige bestemming');
+      render();
+    }, !kanActie || p.stad!==k);
+  }
+  voeg('Annuleer', ()=>{});
+  menu.style.display='flex';
+  menu.style.left=Math.min(e.clientX, window.innerWidth-220)+'px';
+  menu.style.top=Math.max(10, e.clientY-menu.offsetHeight-10)+'px';
+  // reposition after render
+  requestAnimationFrame(()=>{ menu.style.top=Math.max(10, e.clientY-menu.offsetHeight-10)+'px'; });
+}
+document.addEventListener('click', e=>{
+  const menu=document.getElementById('ctxmenu');
+  if(menu.style.display==='flex' && !menu.contains(e.target) && !e.target.closest('.hcard')) menu.style.display='none';
+});
+
+/* ── RENDER ──────────────────────────────────────────────────── */
+function maakPickCard(k){
+  const el=document.createElement('div');
+  el.className='pickcard';
+  if(kaartIsEvent(k)){
+    el.style.setProperty('--c','#D4A017');
+    el.innerHTML=`<div class="stripe"></div><div class="hname">${EDEF[eventId(k)].naam}</div><div class="hregion">EVENT</div>`;
+  } else {
+    el.style.setProperty('--c',TYPES[CITY[k].type].color);
+    el.innerHTML=`<div class="stripe"></div><div class="hname">${k}</div><div class="hregion">${CITY[k].region}</div>`;
+  }
+  return el;
+}
+
+function renderBoard(){
+  const svg=document.getElementById('board');
+  let out='';
+  out+=`<defs><radialGradient id="og" cx="50%" cy="38%" r="85%"><stop offset="0%" stop-color="#1e3c5c"/><stop offset="100%" stop-color="#0c1e30"/></radialGradient></defs>`;
+  out+=`<rect width="1000" height="520" fill="url(#og)"/>`;
+  for(let i=1;i<12;i++) out+=`<line class="grat" x1="${Math.round(i*1000/12)}" y1="0" x2="${Math.round(i*1000/12)}" y2="520"/>`;
+  for(let i=1;i<6;i++) out+=`<line class="grat" x1="0" y1="${Math.round(i*520/6)}" x2="1000" y2="${Math.round(i*520/6)}"/>`;
+  out+=`<path class="land" d="${LAND_PATH}"/>`;
+  const regposs={'Noord-Amerika':[160,75],'Latijns-Amerika':[300,458],'Europa':[527,68],'N-Afrika & M-Oosten':[424,257],'Sub-Sahara Afrika':[485,362],'Zuid-Azië':[688,348],'Oost-Azië':[906,118],'ZO-Azië & Oceanië':[866,500]};
+  for(const [r,[x,y]] of Object.entries(regposs)){
+    const tip=S && S.legacyActive && S.legacyActive.some(l=>l.id==='regiotip'&&l.regio===r) && regioTotaal(r)>=regioDrempel(r);
+    out+=`<text class="regionlabel${tip?' tipped':''}" x="${x}" y="${y}">${r}${tip?' ⚠ OVERBELAST':''}</text>`;
+  }
+  // verbindingen
+  const done=new Set();
+  CITIES.forEach(c=>c.conns.forEach(d=>{
+    const key=[c.name,d].sort().join('|');
+    if(done.has(key))return; done.add(key);
+    const a=CITY[c.name], b=CITY[d];
+    if(key==='Tokio|Vancouver'){
+      out+=`<line class="edge pacific" x1="${CITY['Vancouver'].x}" y1="${CITY['Vancouver'].y}" x2="2" y2="118"/>`;
+      out+=`<line class="edge pacific" x1="${CITY['Tokio'].x}" y1="${CITY['Tokio'].y}" x2="998" y2="168"/>`;
+      return;
+    }
+    if(key==='Anchorage|Tokio'){
+      out+=`<line class="edge pacific" x1="${CITY['Anchorage'].x}" y1="${CITY['Anchorage'].y}" x2="2" y2="78"/>`;
+      out+=`<line class="edge pacific" x1="${CITY['Tokio'].x}" y1="${CITY['Tokio'].y}" x2="998" y2="190"/>`;
+      return;
+    }
+    out+=`<line class="edge" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`;
+  }));
+  // doelwitten van de actieve modus
+  let targets=new Set();
+  if(S && !S.over && UI.mode){
+    const p=curP();
+    if(UI.mode==='move') CITY[p.stad].conns.forEach(t=>targets.add(t));
+    if(UI.mode==='shuttle') shuttleDoelen().forEach(t=>targets.add(t));
+    if(UI.mode==='charter') CITIES.forEach(c=>{if(c.name!==p.stad)targets.add(c.name)});
+    if(UI.mode==='ev-leak1'||UI.mode==='ev-leak2a') CITIES.forEach(c=>{if(cube(c.name,'ZWART')>0)targets.add(c.name)});
+    if(UI.mode==='ev-leak2b'){ CITY[UI.modeData.eerste].conns.forEach(t=>{if(cube(t,'ZWART')>0)targets.add(t)}); }
+    if(UI.mode==='ev-food') CITIES.forEach(c=>{if(cube(c.name,'GEEL')>0)targets.add(c.name)});
+    if(UI.mode==='protest-remote') CITIES.forEach(c=>{if(S.steden[c.name].protest>0)targets.add(c.name)});
+  }
+  // subtiele markering van direct bereikbare steden (klik = verplaatsen)
+  let reach=new Set();
+  if(S && !S.over && !UI.mode && S.phase==='acties' && S.actions>0) CITY[curP().stad].conns.forEach(t=>reach.add(t));
+  const fl=UI.flash;
+  CITIES.forEach(c=>{
+    const st=S?S.steden[c.name]:null;
+    const isCur = S && !S.over && curP().stad===c.name;
+    let cls='citydot'+(targets.has(c.name)?' hl':'')+(isCur?' cur':'')+(reach.has(c.name)?' reach':'');
+    if(fl && fl.stad===c.name) cls+= fl.kind==='out'?' flashout':' flash';
+    out+=`<g class="${cls}" data-stad="${c.name}">`;
+    out+=`<circle class="halo" cx="${c.x}" cy="${c.y}" r="15"/>`;
+    out+=`<circle class="main" cx="${c.x}" cy="${c.y}" r="10" fill="${NODEC[c.type]}"/>`;
+    let lx=c.x, ly=c.y+26, anch='middle';
+    if(c.lp==='a'){ ly=c.y-17; }
+    else if(c.lp==='r'){ lx=c.x+15; ly=c.y+4; anch='start'; }
+    else if(c.lp==='l'){ lx=c.x-(st&&st.gebouw?32:15); ly=c.y+4; anch='end'; }
+    out+=`<text class="cname2" x="${lx}" y="${ly}" text-anchor="${anch}">${c.name}</text>`;
+    if(st){
+      // crisisblokjes als fysieke stapels boven de stad
+      const types=TYPEKEYS.filter(t=>st.cubes[t]>0);
+      if(types.length){
+        const baseY=(c.lp==='a')?c.y-46:c.y-30;
+        const totW=types.length*17-4;
+        let px=c.x-totW/2;
+        types.forEach(t=>{
+          const n=st.cubes[t];
+          out+=`<g><title>${TYPES[t].label}: ${n}/3 ${n>=3?'— KRITIEK: het volgende blokje veroorzaakt een uitbraak!':'(bij een 4e blokje: uitbraak naar alle buursteden)'}</title>`;
+          for(let j=0;j<n;j++){
+            out+=`<rect class="cube" x="${(px+j*2.6).toFixed(1)}" y="${(baseY-j*3).toFixed(1)}" width="10" height="10" rx="1.5" fill="${NODEC[t]}" stroke="${(n>=3&&j===n-1)?'#fff':'#0b1623'}" stroke-width="${(n>=3&&j===n-1)?1.5:1}"/>`;
+          }
+          out+='</g>';
+          px+=17;
+        });
+      }
+      if(st.gebouw){
+        out+=`<g class="bbadge"><rect x="${c.x-28}" y="${c.y-9}" width="18" height="18" rx="3"/><text x="${c.x-19}" y="${c.y+4}">${st.gebouw}</text><title>${GEBOUWEN[st.gebouw].naam}</title></g>`;
+      }
+      if(st.protest>0){
+        out+=`<g><circle cx="${c.x+17}" cy="${c.y-13}" r="6.5" fill="#E67E22" stroke="#0b1623" stroke-width="1.2"/><text x="${c.x+17}" y="${c.y-9.4}" text-anchor="middle" font-size="9.5" font-weight="900" fill="#fff">!</text><title>Protest ×${st.protest} — bouwen hier kost +1 economie</title></g>`;
+      }
+      if(S){
+        const hier=S.players.map((p,i)=>({p,i})).filter(o=>o.p.stad===c.name);
+        hier.forEach((o,k)=>{
+          const px2=c.x+(k-(hier.length-1)/2)*10, py2=c.y-2;
+          const strk=o.i===S.cur?'#fff':'#0b1623';
+          out+=`<g class="pawn" transform="translate(${px2},${py2})"><path d="M-3.6,6.5 Q-3.6,0.2 -1.4,-1.6 L1.4,-1.6 Q3.6,0.2 3.6,6.5 Z" fill="${o.p.kleur}" stroke="${strk}" stroke-width="1.1"/><circle cx="0" cy="-4.6" r="2.7" fill="${o.p.kleur}" stroke="${strk}" stroke-width="1.1"/></g>`;
+        });
+      }
+    }
+    out+='</g>';
+  });
+  svg.innerHTML=out;
+  UI.flash=null;
+}
+
+function renderSidebar(){
+  if(!S) return;
+  const rates=RATES[S.diff];
+  const rate=rates[Math.min(Math.max(S.escN,1),rates.length)-1];
+  const tb=document.getElementById('tracksBox');
+  const pips=(n,max,cls)=>{let h='<div class="pips">';for(let i=0;i<max;i++)h+=`<div class="pip ${cls} ${i<n?'on':''}"></div>`;return h+'</div>';};
+  tb.innerHTML=`
+    <h3>Wereldstatus</h3>
+    <div class="track" title="Elke uitbraak telt +1. Vol = verloren. Lager is beter."><div class="tlabel">${ic('alert',13)}Cascade</div>${pips(S.cascade,CASCADE_MAX,'danger')}<span class="tnum">${S.cascade}/${CASCADE_MAX}</span></div>
+    <div class="track" title="Aantal Escalation-kaarten dat al is omgeslagen. Bepaalt hoeveel Pressure-kaarten per beurt vallen."><div class="tlabel">${ic('flame',13)}Escalaties</div>${pips(S.escN,S.diff,'danger')}<span class="tnum">tempo ${rate}</span></div>
+    <div class="track" title="Betaalt gebouwen en campagnes. Op 0 + Escalation = verloren. Hoger is beter."><div class="tlabel">${ic('coins',13)}Economie</div>${pips(S.economie,ECON_MAX,'eco')}<span class="tnum">${S.economie}</span></div>
+    <div class="track" title="Draagvlak voor maatregelen. ≥4 nodig voor de sociale doorbraak. Hoger is beter."><div class="tlabel">${ic('smile',13)}Acceptatie</div>${pips(S.sociaal,SOC_MAX,'soc')}<span class="tnum">${S.sociaal}</span></div>
+    <div style="margin-top:5px"><span class="dir bad">▲ rood = slechter</span> &nbsp; <span class="dir good">▲ groen/blauw = beter</span></div>`;
+  document.getElementById('curesBox').innerHTML=CURES.map(c=>{
+    const done=S.cures[c.id];
+    return `<div class="cure ${done?'done':''}" style="--c:${TYPES[c.type].color}" title="${c.reqText}\n\nEffect: ${c.effectText}"><div class="cicon">${ic(c.icon,15)}</div><div class="cname">${c.naam}</div><div class="cstat">${done?'✓ BEHAALD':'open'}</div></div>`;
+  }).join('');
+  const lp=S.laatstePressure?PDEF[S.laatstePressure]:null;
+  document.getElementById('suppliesBox').innerHTML=
+    `<div class="supplies">${TYPEKEYS.map(t=>`<div class="sup" title="Voorraad ${TYPES[t].label}-blokjes. Op = verloren."><div class="supcube" style="background:${NODEC[t]}"></div>${S.supply[t]}</div>`).join('')}</div>
+     <div style="height:7px"></div>
+     <div class="deckrow" title="Hieruit trek je handkaarten (steden & events). Op = verloren."><span>${ic('layers',12)}Handkaarten-deck</span><b>${S.playerDeck.length}</b></div>
+     <div class="deckrow" title="Dit deck voegt crisisblokjes toe aan steden."><span>${ic('flame',12)}Pressure-deck</span><b>${S.pressureDeck.length} (aflg ${S.pressureDiscard.length})</b></div>
+     <div class="deckrow"><span>${ic('zap',12)}Crisis Surge</span><b>${S.surgeDeck.length}</b></div>
+     ${lp?`<div class="deckrow l-dim" style="color:var(--muted)"><span>Laatste pressure:</span><span>${TYPES[lp.type].emoji} ${lp.stad}</span></div>`:''}`;
+  const lb=document.getElementById('legacyBox');
+  lb.innerHTML = S.legacyActive.length===0 ? '<div class="l-dim" style="color:var(--muted);font-size:12px">— geen —</div>' :
+    S.legacyActive.map(l=>{
+      const d=LDEF[l.id];
+      return `<div class="leg ${d.soort}"><div class="lt">${d.soort==='neg'?'⚠️':'✨'} ${d.titel}${l.regio?' · '+l.regio:''}</div><div>${d.tekst(l.regio||'')}</div>${l.expires?`<div class="lsub">t/m ronde ${l.expires-1}</div>`:''}${d.neutr?`<div class="lsub">neutraliseer: ${d.neutr}</div>`:''}</div>`;
+    }).join('');
+}
+
+/* Contextuele adviseur: legt uit wat nú de logische zet is en waarom */
+function adviseur(){
+  if(!S||S.over) return '';
+  const p=curP();
+  const krit=CITIES.filter(c=>TYPEKEYS.some(t=>S.steden[c.name].cubes[t]>=3)).map(c=>c.name);
+  if(krit.length) return `Kritiek (stapel van 3): <b>${krit.slice(0,3).join(', ')}</b> — behandel daar vóór de volgende uitbraak.`;
+  const stadk=p.hand.filter(k=>!kaartIsEvent(k));
+  for(const cu of CURES){
+    if(!S.cures[cu.id] && stadk.length>=cureKaartEis(cu.id) && cureCheck(cu.id).ok) return `Doorbraak <b>${cu.naam}</b> is mogelijk waar je nu staat — check de Doorbraak-knop!`;
+  }
+  if(S.sociaal<=1 && !S.cures.sociaal) return `Acceptatie kritiek laag (${S.sociaal}): bouwen is duurder en de sociale doorbraak is geblokkeerd. Campagne of Diplomatie helpt.`;
+  if(S.economie<=1) return `Economie bijna op (${S.economie}): bij 0 verlies je zodra een Escalation valt. Green Bonds of zuinig spelen.`;
+  if(gebouwSteden().length<2) return `Bouw gebouwen (stadskaart + economie): zonder gebouwen kun je géén doorbraken realiseren.`;
+  if(S.sociaal<4 && !S.cures.sociaal) return `Acceptatie ${S.sociaal}/4: de sociale doorbraak vereist ≥4. Diplomatie of Campagne wanneer het even rustig is.`;
+  return `Verzamel 4 stadkaarten uit meerdere regio's bij één speler (Deel kennis) en breng ze naar het juiste gebouw.`;
+}
+
+function renderBottom(){
+  if(!S) return;
+  const p=curP();
+  const rol=rolVan(p);
+  const dots=Array.from({length:4},(_,i)=>`<div class="adot ${i<S.actions?'on':''}"></div>`).join('');
+  document.getElementById('playerinfo').innerHTML=`
+    <div class="pname" style="color:${p.kleur}">● ${p.naam}</div>
+    <div class="prole"><b style="color:#cfc9bd">${rol.naam}</b><br>${rol.desc}</div>
+    <div class="pacts">Acties: <span class="actdots">${dots}</span> &nbsp;·&nbsp; ${ic('pin',12)}${p.stad}</div>
+    <div class="advies">${ic('bulb',11)}${adviseur()}</div>
+    <div class="tip">Rechtsklik op een knop of kaart voor uitleg</div>`;
+  // hand
+  const hand=document.getElementById('hand');
+  hand.innerHTML='';
+  p.hand.forEach((k,i)=>{
+    const el=document.createElement('div');
+    if(kaartIsEvent(k)){
+      const ev=EDEF[eventId(k)];
+      el.className='hcard event'; el.style.setProperty('--c','#D4A017');
+      el.innerHTML=`<div class="stripe"></div><div class="hname">${ev.naam}</div><div class="hregion">Event</div><div class="hdesc">${ev.desc}</div><div class="hfoot"><span>EVENT</span><span>🎴</span></div>`;
+    } else {
+      const c=CITY[k];
+      el.className='hcard'; el.style.setProperty('--c',TYPES[c.type].color);
+      el.innerHTML=`<div class="stripe"></div><div class="hname">${k}</div><div class="hregion">${c.region}</div><div class="hfoot"><span>${TYPES[c.type].label}</span><span>${TYPES[c.type].emoji}</span></div>`;
+    }
+    el.onclick=(e)=>{ e.stopPropagation(); toonCtx(e,i); };
+    hand.appendChild(el);
+  });
+  // actieknoppen
+  const A=document.getElementById('actions');
+  const kan = S.phase==='acties' && S.actions>0 && !S.over && !UI.mode;
+  const c=S.steden[p.stad];
+  const heeftCubes=TYPEKEYS.some(t=>c.cubes[t]>0);
+  const btns=[];
+  const b=(id,label,fn,disabled,cls)=>btns.push({id,label,fn,disabled,cls});
+  b('beweeg', ic('nav')+'Beweeg', actieBeweeg, !kan);
+  b('shuttle', ic('repeat')+'Shuttle', actieShuttle, !kan||shuttleDoelen().length===0);
+  b('behandel', ic('minus')+'Behandel', actieBehandel, !kan||!heeftCubes);
+  b('bouw', ic('hammer')+'Bouw', ()=>actieBouw(false), !kan||!!c.gebouw||!p.hand.includes(p.stad)||S.economie===0);
+  b('deel', ic('swap')+'Deel', actieDeel, !kan||!S.players.some(q=>q!==p&&q.stad===p.stad));
+  b('doorbraak', ic('bulb')+'Doorbraak', actieDoorbraak, !kan||!CURES.some(cc=>!S.cures[cc.id]&&cureCheck(cc.id).ok&&p.hand.filter(k=>!kaartIsEvent(k)).length>=cureKaartEis(cc.id)));
+  b('campagne', ic('mega')+'Campagne', actieCampagne, !kan||(S.economie<1&&c.gebouw!=='H'));
+  const anyProtest=CITIES.some(x=>S.steden[x.name].protest>0);
+  b('protest', ic('check')+'De-escaleer', actieProtest, (S.cures.sociaal? (S.phase!=='acties'||S.over) : !kan) || (c.protest===0 && !(c.gebouw&&anyProtest)));
+  if(p.rol==='scientist' || c.gebouw==='R'){
+    b('peek', ic('eye')+'Analyse', actiePeek, S.phase!=='acties'||S.over||!kanPeek(p));
+  }
+  if(p.rol==='scientist' && legacyActief('aigov')) b('fixai', ic('wrench')+'Fix AI', actieScientistFix, !kan||p.hand.length===0);
+  if(p.rol==='diplomat') b('diplo', ic('globe')+'Diplomatie', actieDiplomat, !kan||p.usedDiplomat);
+  if(S.cures.governance) b('neutr', ic('x')+'Neutraliseer', actieNeutraliseer, !kan||S.economie<1||!S.legacyActive.some(l=>LDEF[l.id].soort==='neg'));
+  b('einde', ic('next')+(S.actions>0?'Einde acties & trek kaarten':'Trek kaarten'), eindeActies, S.phase!=='acties'||S.over||!!UI.mode, 'primary wide');
+  A.innerHTML='';
+  btns.forEach(x=>{
+    const el=document.createElement('button');
+    el.className='abtn '+(x.cls||''); el.innerHTML=x.label; el.disabled=!!x.disabled;
+    el.dataset.act=x.id;
+    const inf=ACTION_INFO[x.id];
+    if(inf) el.title=inf.t+' — rechtsklik voor uitleg';
+    el.onclick=x.fn;
+    A.appendChild(el);
+  });
+}
+
+function render(){
+  if(!S) return;
+  renderBoard();
+  renderSidebar();
+  renderBottom();
+  document.getElementById('tRound').textContent='Ronde '+S.round;
+  const fase={acties:'Acties',trekken:'Kaarten trekken',pressure:'Pressure-fase'}[S.phase]||S.phase;
+  document.getElementById('tPhase').textContent='Fase: '+fase;
+}
+
+/* ── ACTIE-UITLEG (rechtsklik) ───────────────────────────────── */
+const ACTION_INFO={
+  beweeg:{t:'Beweeg (1 actie)', d:'Reis over een verbindingslijn naar een aangrenzende stad. Sneller: klik gewoon direct op een verbonden stad (gestippelde ring) op de kaart. Klik op je eigen stad om te behandelen.'},
+  shuttle:{t:'Shuttle (1 actie)', d:'Reis van een stad met een gebouw direct naar een andere stad met een gebouw. Een snel mondiaal netwerk — bouw dus op strategische plekken.'},
+  behandel:{t:'Behandel (1 actie)', d:'Verwijder 1 crisisblokje uit je huidige stad. Bij 3 blokjes van één kleur staat de stad op uitbarsten (witte rand)! Na de bijbehorende doorbraak verwijder je álle blokjes van die kleur in één actie. De Infrastructure Engineer verwijdert 2 bij rood/zwart.'},
+  bouw:{t:'Bouw (1 actie + stadskaart + economie)', d:'Bouw een gebouw in je huidige stad — je moet de stadskaart van díe stad in je hand hebben. Elk gebouw doet iets unieks: R = Pressure-kaart spieken · E = sterker rood/zwart behandelen · N = automatisch groenherstel per ronde · A = schild tegen rode uitbraken · H = +1 economie per ronde en gratis campagnes. Daarnaast zijn ze vereist voor doorbraken en vormen ze het shuttle-netwerk. Max 1 per stad, 6 op het bord.'},
+  deel:{t:'Deel kennis (1 actie)', d:'Geef of neem de stadskaart van de stad waar jullie sámen staan. De Diplomat mag elke kaart delen; na Mondiale Samenwerking mag iedereen dat. Zo verzamelt één speler de 4 kaarten voor een doorbraak.'},
+  doorbraak:{t:'Doorbraak (1 actie + 4 stadkaarten)', d:'Dé winconditie. Lever 4 stadkaarten in terwijl je bij het juiste gebouw staat (zie de eisen in de zijbalk). Alle 4 doorbraken samen = winst. Specialisten hebben er maar 3 nodig voor "hun" doorbraken.'},
+  campagne:{t:'Sociale campagne (1 actie + 1 economie)', d:'Verhoog de sociale acceptatie met 1 (gratis in een stad met Economic & Social Hub). Waarom? Onder acceptatie 2 wordt bouwen duurder en is de Veerkrachtige Samenleving-doorbraak geblokkeerd; vanaf 4 wordt die bereikbaar. Acceptatie daalt door crisiskaarten — soms moet je actief bijsturen.'},
+  protest:{t:'De-escaleer protest (1 actie)', d:'Verwijder een protesttoken (oranje !) uit je huidige stad. Sta je in een stad mét gebouw, dan mag je via het infrastructuurnetwerk protest in élke stad de-escaleren. Protest maakt bouwen daar +1 economie duurder. Gratis na de Veerkrachtige Samenleving-doorbraak.'},
+  peek:{t:'Systeemanalyse (gratis, 1×/beurt)', d:'Bekijk de volgende Pressure-kaart, zodat het team weet waar de volgende klap valt. De Systems Scientist kan dit overal; iedereen anders kan het in een stad met een Research Hub (tenzij AI Governance Failure actief is).'},
+  fixai:{t:'Herstel AI-governance (1 actie + 1 kaart)', d:'Alleen de Systems Scientist kan de AI Governance Failure neutraliseren door 1 actie en 1 willekeurige kaart in te leveren.'},
+  diplo:{t:'Diplomatie (1 actie, 1×/beurt)', d:'Alleen de Diplomat: verhoog de sociale acceptatie met 1 zónder economie te betalen. Doe dit wanneer acceptatie onder 4 staat (sociale doorbraak geblokkeerd) of onder 2 dreigt te zakken (bouwen wordt duurder) — de Diplomat is het goedkoopste draagvlak-kanaal van het team.'},
+  neutr:{t:'Neutraliseer legacy (1 actie + 1 economie)', d:'Na Mondiale Samenwerking: verwijder een actief negatief legacy-effect (zoals Fossiele Lock-in) van het bord.'},
+  einde:{t:'Einde beurt', d:'Sluit je actiefase af. Je trekt dan 2 handkaarten voor in je hand (een Escalation-kaart slaat direct toe!) en daarna slaat de wereld terug: Pressure-kaarten verschijnen groot in beeld en voegen blokjes toe — hoe verder de escalatie, hoe meer Pressure-kaarten.'},
+};
+document.getElementById('actions').addEventListener('contextmenu', e=>{
+  const btn=e.target.closest('.abtn');
+  if(!btn||!btn.dataset.act) return;
+  e.preventDefault();
+  const inf=ACTION_INFO[btn.dataset.act];
+  if(inf) info(inf.t, `<p>${inf.d}</p>`);
+});
+document.getElementById('hand').addEventListener('contextmenu', e=>{
+  const el=e.target.closest('.hcard');
+  if(!el||!S) return;
+  e.preventDefault();
+  const idx=[...document.querySelectorAll('#hand .hcard')].indexOf(el);
+  const k=curP().hand[idx];
+  if(k===undefined) return;
+  if(kaartIsEvent(k)){
+    const ev=EDEF[eventId(k)];
+    info('Event — '+ev.naam, `<p>${ev.desc}</p><p class="reqline ok">Kost: ${ev.kost===0?'geen actie':'1 actie'}${ev.reactief?' · speelt automatisch wanneer een Escalation valt':''}. Klik de kaart (linksklik) om te spelen.</p>`);
+  } else {
+    const ci=CITY[k];
+    info('Stadkaart — '+k, `<p><b>${ci.region}</b> · ${TYPES[ci.type].emoji} ${TYPES[ci.type].label}</p><p>Eén kaart, vijf gebruiken (linksklik op de kaart):</p><p>• <b>Directe vlucht</b> — speel af, reis naar ${k}.<br>• <b>Chartervlucht</b> — sta je ín ${k}: speel af en reis naar élke stad.<br>• <b>Bouwen</b> — vereist om in ${k} een gebouw te zetten.<br>• <b>Doorbraak</b> — één van de 4 inleverkaarten.<br>• <b>Delen</b> — overdraagbaar aan een medespeler in ${k}.</p>`);
+  }
+});
+
+/* ── BOARD CLICK + ZOOM/PAN ──────────────────────────────────── */
+document.getElementById('board').addEventListener('click', e=>{
+  if(UI.suppressClick) return;
+  const g=e.target.closest('[data-stad]');
+  if(g) klikStad(g.dataset.stad);
+});
+document.getElementById('hintcancel').onclick=wisHint;
+(function(){
+  const svg=document.getElementById('board');
+  let vb={x:0,y:0,w:1000,h:520};
+  const apply=()=>svg.setAttribute('viewBox',`${vb.x.toFixed(1)} ${vb.y.toFixed(1)} ${vb.w.toFixed(1)} ${vb.h.toFixed(1)}`);
+  const clamp=()=>{
+    vb.w=Math.min(1000,Math.max(240,vb.w)); vb.h=vb.w*0.52;
+    vb.x=Math.max(0,Math.min(1000-vb.w,vb.x));
+    vb.y=Math.max(0,Math.min(520-vb.h,vb.y));
+  };
+  svg.addEventListener('wheel', e=>{
+    e.preventDefault();
+    const r=svg.getBoundingClientRect();
+    const mx=vb.x+(e.clientX-r.left)/r.width*vb.w;
+    const my=vb.y+(e.clientY-r.top)/r.height*vb.h;
+    const f=e.deltaY>0?1.18:1/1.18;
+    vb.w*=f; vb.h=vb.w*0.52;
+    vb.x=mx-(mx-vb.x)*f; vb.y=my-(my-vb.y)*f;
+    clamp(); apply();
+  }, {passive:false});
+  let pan=null;
+  svg.addEventListener('pointerdown', e=>{ if(e.button!==0)return; pan={x:e.clientX,y:e.clientY,vx:vb.x,vy:vb.y,moved:false}; });
+  window.addEventListener('pointermove', e=>{
+    if(!pan) return;
+    if(Math.abs(e.clientX-pan.x)+Math.abs(e.clientY-pan.y)>6) pan.moved=true;
+    if(pan.moved){
+      const r=svg.getBoundingClientRect();
+      vb.x=pan.vx-(e.clientX-pan.x)/r.width*vb.w;
+      vb.y=pan.vy-(e.clientY-pan.y)/r.height*vb.h;
+      clamp(); apply();
+    }
+  });
+  window.addEventListener('pointerup', ()=>{
+    if(pan&&pan.moved){ UI.suppressClick=true; setTimeout(()=>UI.suppressClick=false,60); }
+    pan=null;
+  });
+  const zoom=f=>{ const cx=vb.x+vb.w/2, cy=vb.y+vb.h/2; vb.w*=f; vb.h=vb.w*0.52; vb.x=cx-vb.w/2; vb.y=cy-vb.h/2; clamp(); apply(); };
+  document.getElementById('zin').onclick=()=>zoom(1/1.3);
+  document.getElementById('zout').onclick=()=>zoom(1.3);
+  document.getElementById('zreset').onclick=()=>{ vb={x:0,y:0,w:1000,h:520}; apply(); };
+})();
+
+/* ── REGELS ──────────────────────────────────────────────────── */
+const REGELS_HTML=`
+<h3 style="margin-bottom:6px">Doel</h3>
+<p>Werk samen om <b>vier mondiale doorbraken</b> te realiseren vóórdat de wereld kantelt. Behandelen alleen is niet genoeg; alleen plannen ook niet.</p>
+<h3 style="margin:10px 0 6px">Jouw beurt</h3>
+<p>① <b>4 acties</b>: bewegen (verbonden stad), directe vlucht (speel bestemmingskaart), charter (speel kaart van je huidige stad), shuttle (tussen gebouwen), behandelen (−1 blokje; met doorbraak: alles), bouwen (1 actie + stadskaart + economie), kennis delen (zelfde stad, kaart van die stad), doorbraak (4 stadkaarten bij het juiste gebouw), sociale campagne (1 economie → +1 acceptatie), protest de-escaleren (vanuit een stad met gebouw: in élke stad).<br>
+② <b>Trek 2 handkaarten</b> (stadkaarten/events voor in je hand) — Escalation-kaarten resolven direct.<br>
+③ <b>Pressure-fase</b>: er verschijnen Pressure-kaarten (gelijk aan het escalatietempo) die crisisblokjes aan steden toevoegen. Dit zijn géén handkaarten — ze zijn de tegenstander.</p>
+<h3 style="margin:10px 0 6px">Escalatiepaden (let op: het zijn er meerdere!)</h3>
+<p>🚨 <b>Escalation-kaarten</b>: Increase → Infect (3 blokjes onderaan deck) → Intensify (aflegstapel terug bovenop!) → ⚡ <b>Crisis Surge</b> (verrassingskaart, hard als de stad al belast is) → ⚠️ <b>Immediate Legacy</b> (vanaf Escalation III: blijvende wereldveranderingen).<br>
+💥 <b>Uitbraken</b>: een 4e blokje van één kleur laat de stad uitbarsten naar alle buren (Cascade +1, kettingreacties mogelijk).<br>
+🧊 <b>Tipping points</b>: 10+ rode blokjes → Arctisch kantelpunt; 4+ gele blokjes in Zuid-Azië/Sub-Sahara → voedselspiraal.<br>
+🃏 <b>Compound-effecten</b>: Pressure-kaarten worden erger als er al andere druk ligt.</p>
+<h3 style="margin:10px 0 6px">Verliezen</h3>
+<p>① Cascade Track vol (${CASCADE_MAX}) · ② een blokjesvoorraad op · ③ Player Deck op · ④ economie 0 op het moment van een Escalation.</p>
+<h3 style="margin:10px 0 6px">Winnen</h3>
+<p>Alle vier doorbraken: <b>Schone Energie</b> (≥3 regio's, bij Research Hub of Energy Site, economie ≥2) · <b>Ecologisch Herstel</b> (≥2 kaarten uit kwetsbare regio's, bij Ecosystem Recovery Zone) · <b>Veerkrachtige Samenleving</b> (≥3 regio's, acceptatie ≥4, bij Adaptation Center of Econ & Social Hub) · <b>Mondiale Samenwerking</b> (≥4 regio's, bij Economic & Social Hub).</p>
+<h3 style="margin:10px 0 6px">Bediening</h3>
+<p>Rechtsklik op een actieknop of handkaart voor uitleg · scroll op de kaart om te zoomen, slepen om te verschuiven · klik een handkaart voor vluchten en events · een stapel van 3 blokjes met witte rand staat op uitbarsten.</p>
+<h3 style="margin:10px 0 6px">Economie & sociale acceptatie</h3>
+<p>💰 Economie betaalt gebouwen en campagnes; crises vreten eraan. Bij 0: niet bouwen, en een Escalation = verlies.<br>
+🙌 Acceptatie stijgt door <i>zichtbare</i> crises en campagnes, daalt door dure maatregelen bij rust. Onder 2: ⚡-bouwen kost +1 en de sociale doorbraak is geblokkeerd; bij 4+ wordt die bereikbaar. Vroeg ingrijpen is moeilijk, laat ingrijpen is duur — precies zoals in het echt.</p>
+<h3 style="margin:10px 0 6px">Digitale afwijkingen t.o.v. de papieren docs</h3>
+<p style="color:var(--muted);font-size:12px">Zwart behandelen schaalt mee met 🌍 Mondiale Samenwerking (treat-all) voor mechanische symmetrie · Arctisch tipping point op 10+ rood (i.p.v. 4+) voor digitale balans · doorbraken kosten 4 stadkaarten i.p.v. 5 (tuningregel uit het designdoc — met 24 stadkaarten totaal is 4×5 wiskundig vrijwel onhaalbaar) · shuttle werkt tussen alle gebouwen · alle 5 gebouwtypes beschikbaar zodat elke doorbraak haalbaar is.</p>`;
+document.getElementById('btnRules').onclick=()=>info('📖 Spelregels — Planet Under Pressure', REGELS_HTML);
+document.getElementById('btnNew').onclick=async()=>{
+  const ok=await showModal({title:'Nieuw spel', html:'<p>Huidige spel beëindigen en opnieuw beginnen?</p>', buttons:[{label:'Ja, opnieuw',value:true,cls:'primary'},{label:'Nee',value:false}]});
+  if(ok) location.reload();
+};
+
+/* ── SETUP UI ────────────────────────────────────────────────── */
+(function(){
+  let nPlayers=3, diff=5;
+  const segP=document.getElementById('segPlayers');
+  const segD=document.getElementById('segDiff');
+  const names=document.getElementById('nameInputs');
+  function herbouwNamen(){
+    names.innerHTML='';
+    for(let i=0;i<nPlayers;i++){
+      const inp=document.createElement('input');
+      inp.placeholder='Speler '+(i+1);
+      inp.id='pname'+i;
+      inp.maxLength=14;
+      names.appendChild(inp);
+      const sel=document.createElement('select');
+      sel.id='prol'+i;
+      sel.innerHTML='<option value="">🎲 Willekeurige rol</option>'+ROLLEN.map(r=>`<option value="${r.id}">${r.naam}</option>`).join('');
+      sel.title='Kies een rol of laat het lot beslissen';
+      names.appendChild(sel);
+    }
+  }
+  segP.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    segP.querySelectorAll('button').forEach(x=>x.classList.remove('sel'));
+    b.classList.add('sel'); nPlayers=+b.dataset.v; herbouwNamen();
+  });
+  segD.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    segD.querySelectorAll('button').forEach(x=>x.classList.remove('sel'));
+    b.classList.add('sel'); diff=+b.dataset.v;
+  });
+  herbouwNamen();
+  document.getElementById('setupinfo').innerHTML=`
+    <h2>ZO WERKT HET</h2>
+    <div class="si"><b>${ic('bulb',13)}Doel</b>Realiseer samen <b style="display:inline">4 mondiale doorbraken</b> (schone energie, ecologisch herstel, veerkrachtige samenleving, mondiale samenwerking) vóórdat de wereld kantelt. Per doorbraak: verzamel 4 stadkaarten en sta bij het juiste gebouw.</div>
+    <div class="si"><b>${ic('repeat',13)}Jouw beurt</b>① Doe 4 acties (reizen, behandelen, bouwen, delen…) → ② trek 2 <b style="display:inline">handkaarten</b> voor in je hand → ③ de wereld slaat terug: <b style="display:inline">Pressure-kaarten</b> verschijnen groot in beeld en leggen crisisblokjes op steden.</div>
+    <div class="si"><b>${ic('alert',13)}Blokjes & uitbraken</b>Crisisblokjes stapelen zich op steden. Een stapel van 3 met witte rand = kritiek: het 4e blokje veroorzaakt een <b style="display:inline">uitbraak</b> naar álle buursteden, met kettingreacties.</div>
+    <div class="si"><b>${ic('eye',13)}Indicatoren</b>
+      <div class="indrow"><span class="sw" style="background:#C0392B"></span>Cascade & Escalaties — <span class="dir bad" style="margin:0">omhoog = slechter</span> (cascade vol = verloren)</div>
+      <div class="indrow"><span class="sw" style="background:#27ae60"></span>Economie — <span class="dir good" style="margin:0">omhoog = beter</span> (op 0 + escalatie = verloren)</div>
+      <div class="indrow"><span class="sw" style="background:#5DADE2"></span>Sociale acceptatie — <span class="dir good" style="margin:0">omhoog = beter</span> (≥4 nodig voor sociale doorbraak)</div>
+      <div class="indrow"><span class="sw" style="background:#E0584C"></span><span class="sw" style="background:#4CAF50"></span><span class="sw" style="background:#546E7A"></span><span class="sw" style="background:#F2C12E"></span>Blokjesvoorraad — een kleur óp = verloren</div></div>
+    <div class="si"><b>${ic('flame',13)}Meerdere escalatiepaden</b>Escalation-kaarten brengen oude brandhaarden terug, triggeren Crisis Surges en blijvende Legacy-effecten. Tipping points (te veel rood of geel op het bord) verergeren alles vanzelf.</div>
+    <div class="si"><b>${ic('book',13)}Bediening</b>Klik direct op een verbonden stad (gestippelde ring) om te reizen; klik je eigen stad om te behandelen. Rechtsklik op een actieknop of handkaart = uitleg. Linksklik op een handkaart = spelen (vlucht/event). Scroll = zoomen, slepen = verschuiven. Volledige regels: knop "Regels" rechtsboven.</div>`;
+  document.getElementById('btnstart').onclick=()=>{
+    const namen=[], rollen=[];
+    for(let i=0;i<nPlayers;i++){
+      namen.push(document.getElementById('pname'+i).value.trim());
+      rollen.push(document.getElementById('prol'+i).value||null);
+    }
+    startSpel(namen, diff, rollen);
+  };
+})();
+</script>
+</body>
+</html>
