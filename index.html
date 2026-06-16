@@ -703,6 +703,8 @@ function wijzigCascade(d, reden){
   if(S.over) return;
   S.cascade=Math.max(0,S.cascade+d);
   log(`⚠️ Cascade Track ${d>0?'+':''}${d}${reden?' — '+reden:''} (nu ${S.cascade}/${CASCADE_MAX})`, d>0?'bad':'good');
+  if(d>0 && S.cascade===5) log(`🌍 De wereld begint te kantelen — systemen raken overbelast. Nog 3 stappen.`, 'bad');
+  if(d>0 && S.cascade===7) log(`🚨 KRITIEK — De wereld staat op de rand van onomkeerbaar systeemfalen. Nog 1 stap!`, 'bad');
   if(S.cascade>=CASCADE_MAX) verlies('De Cascade Track is vol: de wereld kantelt in onomkeerbare kettingreacties.');
 }
 
@@ -742,11 +744,11 @@ function uitbraak(stad, type, ctx){
     log(`📦 Climate Resilience Package negeert de rode uitbraak in ${stad} (${res.regio}).`, 'good');
     return;
   }
-  log(`💥 <b>UITBRAAK</b> in ${stad} (${TYPES[type].emoji} ${TYPES[type].label})!`, 'bad');
+  const buren=CITY[stad].conns.slice(0,3).join(', ')+(CITY[stad].conns.length>3?' …':'');
+  log(`💥 <b>UITBRAAK</b> in ${stad} — ${TYPES[type].label} verspreidt naar ${buren}!`, 'bad');
   UI.flash={stad, kind:'out'};
   wijzigCascade(1, `uitbraak ${stad}`);
   if(S.over) return;
-  wijzigSociaal(1, 'zichtbare crisis vergroot draagvlak');
   // Biodiversity Collapse: groene uitbraak in regio → +1 geel
   const bio=legacyActief('biodiv');
   if(type==='GROEN' && bio && CITY[stad].region===bio.regio){
@@ -766,7 +768,7 @@ function verwijderCube(stad,type,n){
 }
 
 /* ── AUTO-LEGACY / TIPPING POINTS ────────────────────────────── */
-function regioDrempel(regio){ return 2*regioSteden(regio).length; }
+function regioDrempel(regio){ return 3*regioSteden(regio).length; }
 function regioTotaal(regio){ return regioSteden(regio).reduce((a,s)=>a+TYPEKEYS.reduce((x,t)=>x+cube(s,t),0),0); }
 function regioTipActief(regio){ return S.legacyActive.some(l=>l.id==='regiotip'&&l.regio===regio); }
 function checkTippingPoints(){
@@ -778,11 +780,8 @@ function checkTippingPoints(){
     const tot=regioTotaal(regio), dr=regioDrempel(regio);
     if(tot>=dr){
       S.legacyActive.push({id:'regiotip', regio});
-      log(`🌐 <b>REGIONALE TIPPING POINT: ${regio}</b> — ${tot} blokjes (drempel ${dr}). Pressure-kaarten plaatsen hier nu 1 extra blokje.`, 'bad');
-      wijzigCascade(1, `regionale tipping point ${regio}`);
-      if(S.over) return;
-      wijzigSociaal(1, 'zichtbare regionale crisis vergroot draagvlak');
-      info('🌐 Regionale Tipping Point', `<p><b>${regio}</b> raakt overbelast: er liggen ${tot} crisisblokjes (drempel: ${dr}).</p><p>• Cascade Track +1<br>• Zolang de regio op/boven de drempel zit, plaatsen Pressure-kaarten hier <b>1 extra blokje</b>.</p><p class="reqline ok">Behandel de regio onder de ${dr} blokjes — dan dooft het extra effect uit.</p>`);
+      log(`🌐 <b>REGIONALE TIPPING POINT: ${regio}</b> — ${tot} blokjes (drempel ${dr}). Elke Pressure-kaart in dit gebied legt nu 1 extra blokje.`, 'bad');
+      info('🌐 Regionale Tipping Point', `<p><b>${regio}</b> heeft een kantelpunt bereikt: met ${tot} crisisblokjes kan het systeem zichzelf niet meer herstellen.</p><p>Zolang de regio boven de drempel (${dr}) blijft, plaatst elke Pressure-kaart hier <b>1 extra blokje</b>. De regio verslechtert sneller dan de rest van de wereld.</p><p class="reqline ok">Behandel steden in ${regio} tot het totaal onder de ${dr} daalt — dan dooft het extra effect uit.</p>`);
     }
   }
   if(!legacyActief('arctic') && LDEF.arctic && !S._arcticDone && totaalCubes('ROOD')>=10 && !S.cures.energie){
@@ -925,6 +924,8 @@ async function resolveEscalation(){
   const rates=RATES[S.diff];
   const rate=rates[Math.min(n,rates.length)-1];
   log(`① Increase: escalatietempo is nu <b>${rate}</b>.`, 'sys');
+  // Sociale uitputting bij Escalation II+: crises vreten aan het draagvlak
+  if(n>=2 && !S.over) wijzigSociaal(-1, `maatschappelijke uitputting — Escalation ${['I','II','III','IV','V','VI'][n-1]||n}`);
   // Adaptation Center-schilden herstellen bij elke Escalation
   CITIES.forEach(c=>{ if(S.steden[c.name].gebouw==='A' && S.steden[c.name].adaptUsed){ S.steden[c.name].adaptUsed=false; log(`🛡️ Adaptation Center in ${c.name}: schild hersteld.`, 'good'); } });
 
@@ -1122,7 +1123,8 @@ async function eindeActies(){
   render();
   const rates=RATES[S.diff];
   const rate=rates[Math.min(Math.max(S.escN,1),rates.length)-1];
-  log(`🌡️ Pressure-fase: ${rate} kaarten.`, 'sys');
+  const drukOmschr=['De wereld ademt even','De druk bouwt op','Systemen bezwijken','Crises stapelen zich op','Het kantelpunt nadert'];
+  log(`🌡️ <b>Pressure-fase</b> — ${drukOmschr[Math.min(S.escN,drukOmschr.length-1)]}: ${rate} Pressure-kaart${rate>1?'en':''}.`, 'sys');
   for(let i=0;i<rate;i++){
     if(S.over) return;
     const id=trekPressure();
@@ -1847,16 +1849,26 @@ function adviseur(){
   if(!S||S.over) return '';
   const p=curP();
   const krit=CITIES.filter(c=>TYPEKEYS.some(t=>S.steden[c.name].cubes[t]>=3)).map(c=>c.name);
-  if(krit.length) return `Kritiek (stapel van 3): <b>${krit.slice(0,3).join(', ')}</b> — behandel daar vóór de volgende uitbraak.`;
+  if(krit.length>0){
+    const type=TYPEKEYS.find(t=>S.steden[krit[0]].cubes[t]>=3);
+    return `Kritieke situatie: <b>${krit.slice(0,3).join(', ')}</b> staat op uitbarsten (3 ${TYPES[type].emoji}). Nog één blokje = uitbraak → Cascade +1.`;
+  }
+  if(S.cascade>=6) return `Cascade Track op ${S.cascade}/${CASCADE_MAX} — het systeem is fragiel. Behandel kritieke steden vóór alles: één uitbraak kan te veel zijn.`;
   const stadk=p.hand.filter(k=>!kaartIsEvent(k));
   for(const cu of CURES){
-    if(!S.cures[cu.id] && stadk.length>=cureKaartEis(cu.id) && cureCheck(cu.id).ok) return `Doorbraak <b>${cu.naam}</b> is mogelijk waar je nu staat — check de Doorbraak-knop!`;
+    if(!S.cures[cu.id] && stadk.length>=cureKaartEis(cu.id) && cureCheck(cu.id).ok) return `Doorbraak <b>${cu.naam}</b> is haalbaar waar je nu staat — gebruik de Doorbraak-knop nu!`;
   }
-  if(S.sociaal<=1 && !S.cures.sociaal) return `Acceptatie kritiek laag (${S.sociaal}): bouwen is duurder en de sociale doorbraak is geblokkeerd. Campagne of Diplomatie helpt.`;
-  if(S.economie<=1) return `Economie bijna op (${S.economie}): bij 0 verlies je zodra een Escalation valt. Green Bonds of zuinig spelen.`;
-  if(gebouwSteden().length<2) return `Bouw gebouwen (stadskaart + economie): zonder gebouwen kun je géén doorbraken realiseren.`;
-  if(S.sociaal<4 && !S.cures.sociaal) return `Acceptatie ${S.sociaal}/4: de sociale doorbraak vereist ≥4. Diplomatie of Campagne wanneer het even rustig is.`;
-  return `Verzamel 4 stadkaarten uit meerdere regio's bij één speler (Deel kennis) en breng ze naar het juiste gebouw.`;
+  if(S.sociaal<=1 && !S.cures.sociaal) return `Acceptatie op ${S.sociaal}: elke Escalation vreet verder. Bouwen kost meer en de sociale doorbraak is geblokkeerd. Campagne of Diplomatie nu.`;
+  if(S.economie<=1) return `Economie op ${S.economie}: bij 0 verlies je zodra een Escalation treft. Speel zuinig of gebruik Green Bonds.`;
+  if(gebouwSteden().length<2) return `Geen infrastructuur: zonder gebouwen zijn doorbraken onmogelijk. Bouw nu — kost 1 stadskaart + 1 economie.`;
+  for(const regio of REGIONS){
+    if(!regioTipActief(regio)){
+      const tot=regioTotaal(regio), dr=regioDrempel(regio);
+      if(tot>=dr-2) return `${regio} nadert een kantelpunt (${tot}/${dr} blokjes). Behandel daar vóór de volgende Pressure-fase om versnelling te voorkomen.`;
+    }
+  }
+  if(S.sociaal<4 && !S.cures.sociaal) return `Acceptatie ${S.sociaal}/6 — de sociale doorbraak vereist ≥4. Escalaties vreten dit weg: plan nu een campagne of diplomatie.`;
+  return `Verzamel 4 stadkaarten uit meerdere regio's bij één speler via Deel kennis, en breng ze naar het juiste gebouw voor een doorbraak.`;
 }
 
 function renderBottom(){
