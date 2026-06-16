@@ -283,6 +283,8 @@ button:disabled{opacity:.35;cursor:not-allowed}
   <div class="topinfo">
     <div class="chip" id="tRound">Ronde 1</div>
     <div class="chip" id="tPhase">Fase: Acties</div>
+    <div class="chip" id="tPlayer" style="display:none"></div>
+    <div class="chip" id="tActions" style="display:none;background:#2a3a2a;border:1px solid #4a7a4a;font-size:13px;font-weight:700;letter-spacing:0"></div>
   </div>
   <div class="spacer"></div>
   <button class="tbtn" id="btnRules">Regels</button>
@@ -1942,6 +1944,19 @@ function render(){
   document.getElementById('tRound').textContent='Ronde '+S.round;
   const fase={acties:'Acties',trekken:'Kaarten trekken',pressure:'Pressure-fase'}[S.phase]||S.phase;
   document.getElementById('tPhase').textContent='Fase: '+fase;
+  const tp=document.getElementById('tPlayer');
+  const ta=document.getElementById('tActions');
+  if(S && !S.over){
+    const cp=curP(); const cr=rolVan(cp);
+    tp.style.display=''; tp.style.color=cp.kleur; tp.textContent='● '+cp.naam+' · '+cr.naam;
+    if(S.phase==='acties'){
+      ta.style.display='';
+      ta.textContent=S.actions+' actie'+(S.actions===1?'':'s')+' over';
+      ta.style.background=S.actions<=1?'#3a1a1a':S.actions<=2?'#3a2a1a':'#1a2a1a';
+      ta.style.borderColor=S.actions<=1?'#c0392b':S.actions<=2?'#d4a017':'#4a7a4a';
+      ta.style.color=S.actions<=1?'#e88':S.actions<=2?'#f0c040':'#8fd08f';
+    } else { ta.style.display='none'; }
+  } else { tp.style.display='none'; ta.style.display='none'; }
 }
 
 /* ── ACTIE-UITLEG (rechtsklik) ───────────────────────────────── */
