@@ -1371,7 +1371,9 @@ async function actieDoorbraak(){
     title:'💡 Doorbraak realiseren',
     html:open.map(c=>{
       const chk=cureCheck(c.id);
-      return `<div class="cure" style="--c:${TYPES[c.type].color};margin-bottom:8px"><div class="cicon">${ic(c.icon,15)}</div><div class="cname">${c.naam}<div style="font-family:Barlow;text-transform:none;letter-spacing:0;font-size:11px;color:#999;margin-top:2px">${c.reqText}</div>${chk.regels.map(r=>`<div class="reqline ${r.ok?'ok':'no'}" style="font-family:Barlow;text-transform:none;letter-spacing:0">${r.ok?'✓':'✗'} ${r.txt}</div>`).join('')}</div></div>`;
+      const nKaart=cureKaartEis(c.id);
+      const dynReq=c.reqText.replace(/^\d+/, String(nKaart));
+      return `<div class="cure" style="--c:${TYPES[c.type].color};margin-bottom:8px"><div class="cicon">${ic(c.icon,15)}</div><div class="cname">${c.naam}<div style="font-family:Barlow;text-transform:none;letter-spacing:0;font-size:11px;color:#999;margin-top:2px">${dynReq}</div>${chk.regels.map(r=>`<div class="reqline ${r.ok?'ok':'no'}" style="font-family:Barlow;text-transform:none;letter-spacing:0">${r.ok?'✓':'✗'} ${r.txt}</div>`).join('')}</div></div>`;
     }).join(''),
     buttons:open.map(c=>({label:c.naam, value:c.id, disabled:!cureCheck(c.id).ok})).concat([{label:'Annuleer',value:null}])
   });
@@ -1828,7 +1830,9 @@ function renderSidebar(){
     <div style="margin-top:5px"><span class="dir bad">▲ rood = slechter</span> &nbsp; <span class="dir good">▲ groen/blauw = beter</span></div>`;
   document.getElementById('curesBox').innerHTML=CURES.map(c=>{
     const done=S.cures[c.id];
-    return `<div class="cure ${done?'done':''}" style="--c:${TYPES[c.type].color}" title="${c.reqText}\n\nEffect: ${c.effectText}"><div class="cicon">${ic(c.icon,15)}</div><div class="cname">${c.naam}</div><div class="cstat">${done?'✓ BEHAALD':'open'}</div></div>`;
+    const nK=cureKaartEis(c.id);
+    const tipReq=c.reqText.replace(/^\d+/, String(nK));
+    return `<div class="cure ${done?'done':''}" style="--c:${TYPES[c.type].color}" title="${tipReq}\n\nEffect: ${c.effectText}"><div class="cicon">${ic(c.icon,15)}</div><div class="cname">${c.naam}</div><div class="cstat">${done?'✓ BEHAALD':'open'}</div></div>`;
   }).join('');
   const lp=S.laatstePressure?PDEF[S.laatstePressure]:null;
   document.getElementById('suppliesBox').innerHTML=
