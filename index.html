@@ -701,6 +701,7 @@ function nieuwState(spelers, diff, rolKeuzes){
     warming:0, warmingHalt:false,   // Vastgelegde Opwarming (klimaatinertie)
     investeringen:[],               // {rondes, econ, warming} — delayed payoff
     _redAmp:false,                  // is de rode amplificatie deze pressure-fase al toegepast
+    _overloadDone:new Set(),        // regio's die deze pressure-fase al hun overbelasting-blokje legden
   };
   CITIES.forEach(c=> st.steden[c.name]={cubes:{ROOD:0,GROEN:0,ZWART:0,GEEL:0}, gebouw:null, protest:0});
   const gekozen=(rolKeuzes||[]).map(r=>r||null);
@@ -910,11 +911,19 @@ function verwijderCube(stad,type,n){
 }
 
 /* ── AUTO-LEGACY / TIPPING POINTS ────────────────────────────── */
-function regioDrempel(regio){ return 3*regioSteden(regio).length; }
+function regioDrempel(regio){ return 3*regioSteden(regio).length + 2; }
 function regioTotaal(regio){ return regioSteden(regio).reduce((a,s)=>a+TYPEKEYS.reduce((x,t)=>x+cube(s,t),0),0); }
 function regioTipActief(regio){ return S.legacyActive.some(l=>l.id==='regiotip'&&l.regio===regio); }
 function checkTippingPoints(){
   if(S.over || S.escN<1) return;
+  // Opgeloste overbelasting weer ontwapenen (geen permanente ratchet)
+  S.legacyActive=S.legacyActive.filter(l=>{
+    if(l.id==='regiotip' && regioTotaal(l.regio)<regioDrempel(l.regio)){
+      log(`✅ ${l.regio} is weer onder de drempel — de regionale overbelasting dooft uit.`, 'good');
+      return false;
+    }
+    return true;
+  });
   // Regionale overbelasting (Design Bible §27: regionale tipping points)
   for(const regio of REGIONS){
     if(S.over) return;
@@ -922,8 +931,8 @@ function checkTippingPoints(){
     const tot=regioTotaal(regio), dr=regioDrempel(regio);
     if(tot>=dr){
       S.legacyActive.push({id:'regiotip', regio});
-      log(`🌐 <b>REGIONALE TIPPING POINT: ${regio}</b> — ${tot} blokjes (drempel ${dr}). Elke Pressure-kaart in dit gebied legt nu 1 extra blokje.`, 'bad');
-      info('🌐 Regionale Tipping Point', `<p><b>${regio}</b> heeft een kantelpunt bereikt: met ${tot} crisisblokjes kan het systeem zichzelf niet meer herstellen.</p><p>Zolang de regio boven de drempel (${dr}) blijft, plaatst elke Pressure-kaart hier <b>1 extra blokje</b>. De regio verslechtert sneller dan de rest van de wereld.</p><p class="reqline ok">Behandel steden in ${regio} tot het totaal onder de ${dr} daalt — dan dooft het extra effect uit.</p>`);
+      log(`🌐 <b>REGIONALE TIPPING POINT: ${regio}</b> — ${tot} blokjes (drempel ${dr}). 1× per Pressure-fase legt dit gebied een extra blokje.`, 'bad');
+      info('🌐 Regionale Tipping Point', `<p><b>${regio}</b> heeft een kantelpunt bereikt: met ${tot} crisisblokjes kan het systeem zichzelf moeilijk herstellen.</p><p>Zolang de regio boven de drempel (${dr}) blijft, plaatst de eerste Pressure-kaart hier per fase <b>1 extra blokje</b> (max één keer per fase). De regio verslechtert iets sneller dan de rest.</p><p class="reqline ok">Behandel steden in ${regio} tot het totaal onder de ${dr} daalt — dan dooft het effect vanzelf uit.</p>`);
     }
   }
   if(!legacyActief('arctic') && LDEF.arctic && !S._arcticDone && totaalCubes('ROOD')>=10 && !S.cures.energie){
@@ -1016,8 +1025,9 @@ function resolvePressure(cardId, setupAmount){
       n=2; log(`🌾 Famine Spiral: 2 blokjes i.p.v. 1.`, 'bad');
     }
     const cregio=CITY[card.stad].region;
-    if(regioTipActief(cregio) && regioTotaal(cregio)>=regioDrempel(cregio)){
-      n+=1; log(`🌐 Regionale overbelasting ${cregio}: +1 extra blokje.`, 'bad');
+    if(regioTotaal(cregio)>=regioDrempel(cregio) && !S._overloadDone.has(cregio)){
+      n+=1; S._overloadDone.add(cregio);
+      log(`🌐 Regionale overbelasting ${cregio}: +1 extra blokje (1× per Pressure-fase).`, 'bad');
     }
     // Vastgelegde Opwarming: eerste rode kaart van de fase voelt de hogere basislijn
     if(card.type==='ROOD' && !S._redAmp && warmingTier()>0){
@@ -1268,7 +1278,7 @@ async function eindeActies(){
   if(S.over) return;
   // Pressure-fase
   S.phase='pressure';
-  S._redAmp=false; // opwarming-amplificatie geldt 1× per fase
+  S._redAmp=false; S._overloadDone=new Set(); // amplificatie + overbelasting gelden 1× per fase
   render();
   const rates=RATES[S.diff];
   const rate=rates[Math.min(Math.max(S.escN,1),rates.length)-1];

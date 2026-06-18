@@ -47,6 +47,8 @@ het aantal spelers en de moeilijkheid (4 / 5 / 6 Escalation-kaarten).
 6. **Uitbraak-cascades** — 4e blokje laat een stad uitbarsten naar alle buren
 7. **Vastgelegde Opwarming** — onbehandelbare inertie die de rode druk structureel opvoert (≥8 rood+zwart op het bord → +1 per ronde; per 3 punten +1 🔴 op de eerste rode Pressure-kaart)
 
+> **Regionale overbelasting** (drempel 3× steden + 2) legt max **1 extra blokje per Pressure-fase** en dooft vanzelf uit zodra de regio weer onder de drempel zakt — bewust geen doodspiraal.
+
 ## Win / verlies
 
 **Winst**: alle 4 doorbraken. **Verlies**: Cascade Track vol (8) · een blokjesvoorraad

@@ -94,7 +94,9 @@ START_STAD     'Amsterdam'
 RATES          {4:[2,2,3,3], 5:[2,2,3,3,3], 6:[2,2,3,3,3,4]}  pressure-kaarten/beurt per escN
 economie start 6  (in nieuwState; verhoogd van 4 — was te krap)
 sociaal start  2
-regioDrempel   3 × aantal steden in regio  (regio-overbelasting; functie in AUTO-LEGACY)
+regioDrempel   3 × aantal steden + 2  (regio-overbelasting; functie in AUTO-LEGACY)
+               overbelasting legt max 1 extra blokje PER pressure-fase (S._overloadDone),
+               en ontwapent automatisch zodra de regio weer onder de drempel zakt
 
 — Vastgelegde Opwarming —
 WARMING_MAX        10
