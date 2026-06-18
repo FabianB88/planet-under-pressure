@@ -46,6 +46,9 @@ button:disabled{opacity:.35;cursor:not-allowed}
 .pip.soc.on{background:#5DADE2;border-color:#5DADE2}
 .pip.eco.on{background:#27ae60;border-color:#27ae60}
 .tnum{font-weight:700;margin-left:4px}
+.invest-row{margin-top:6px;font-size:11.5px;background:#16241a;border-left:3px solid #2E7D32;border-radius:3px;padding:4px 7px;line-height:1.5}
+.invest-row svg{vertical-align:-2px}
+.invest-row b{color:#7fd07f}
 
 /* cures */
 .cure{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:3px;margin-bottom:3px;background:#1a1d23;border-left:3px solid var(--c)}
@@ -668,6 +671,15 @@ const HAND_LIMIT = 7;
 const ECON_MAX = 8, SOC_MAX = 6;
 const START_STAD = 'Amsterdam';
 const RATES = {4:[2,2,3,3], 5:[2,2,3,3,3], 6:[2,2,3,3,3,4]};
+/* Vastgelegde Opwarming (klimaatinertie) — tuningknoppen */
+const WARMING_MAX = 10;      // schaal van de track
+const WARMING_RISE_AT = 8;   // ≥ zoveel rood+zwart blokjes op het bord → +1 opwarming per ronde
+const WARMING_TIER = 3;      // elke zoveel punten = +1 extra rood blokje op de eerste rode Pressure-kaart/fase
+/* Transitie-investering — short cost / long payoff (co-benefit) */
+const INVEST_COST = 2;       // economie nu
+const INVEST_RONDES = 3;     // aantal ronden payoff
+const INVEST_ECON = 1;       // economie per ronde terug
+const INVEST_WARMING = 1;    // opwarming per ronde omlaag
 
 /* ── STATE ───────────────────────────────────────────────────── */
 let S = null;          // game state
@@ -686,6 +698,9 @@ function nieuwState(spelers, diff, rolKeuzes){
     cures:{energie:false,eco:false,sociaal:false,governance:false},
     gratisDelen:false, // via legacy
     laatstePressure:null,
+    warming:0, warmingHalt:false,   // Vastgelegde Opwarming (klimaatinertie)
+    investeringen:[],               // {rondes, econ, warming} — delayed payoff
+    _redAmp:false,                  // is de rode amplificatie deze pressure-fase al toegepast
   };
   CITIES.forEach(c=> st.steden[c.name]={cubes:{ROOD:0,GROEN:0,ZWART:0,GEEL:0}, gebouw:null, protest:0});
   const gekozen=(rolKeuzes||[]).map(r=>r||null);
@@ -820,6 +835,20 @@ function wijzigCascade(d, reden){
   if(d>0 && S.cascade===7) log(`🚨 KRITIEK — De wereld staat op de rand van onomkeerbaar systeemfalen. Nog 1 stap!`, 'bad');
   if(S.cascade>=CASCADE_MAX) verlies('De Cascade Track is vol: de wereld kantelt in onomkeerbare kettingreacties.');
 }
+/* Vastgelegde Opwarming: klimaatinertie. Behandelen verwijdert dit NIET — alleen
+   transitie-investeringen en de Schone Energie-doorbraak brengen het omlaag. */
+function warmingTier(){ return Math.floor(S.warming/WARMING_TIER); }
+function wijzigWarming(d, reden){
+  if(S.over) return;
+  const oud=S.warming;
+  S.warming=Math.max(0,Math.min(WARMING_MAX,S.warming+d));
+  if(S.warming===oud) return;
+  log(`${d>0?'🌡️':'❄️'} Vastgelegde Opwarming ${d>0?'+':''}${d}${reden?' — '+reden:''} (nu ${S.warming}/${WARMING_MAX})`, d>0?'bad':'good');
+  if(d>0 && warmingTier()>Math.floor(oud/WARMING_TIER) && warmingTier()===1){
+    info('🌡️ Vastgelegde Opwarming', `<p>De opwarming die je al hebt vastgelegd, begint terug te bijten. Het klimaat reageert traag: emissies van eerdere ronden werken nu door.</p><p><b>Gevolg:</b> de eerste rode Pressure-kaart per ronde plaatst voortaan <b>1 extra 🔴 blokje</b> (per ${WARMING_TIER} punten opwarming).</p><p class="reqline ok">Dit kun je niet wegbehandelen. Investeer in transitie of realiseer de Schone Energie-doorbraak om het te keren.</p>`);
+  }
+}
+function boardRoodZwart(){ return totaalCubes('ROOD')+totaalCubes('ZWART'); }
 
 /* ── CUBES & OUTBREAKS ───────────────────────────────────────── */
 function plaatsCubes(stad, type, n, ctx){
@@ -989,6 +1018,12 @@ function resolvePressure(cardId, setupAmount){
     const cregio=CITY[card.stad].region;
     if(regioTipActief(cregio) && regioTotaal(cregio)>=regioDrempel(cregio)){
       n+=1; log(`🌐 Regionale overbelasting ${cregio}: +1 extra blokje.`, 'bad');
+    }
+    // Vastgelegde Opwarming: eerste rode kaart van de fase voelt de hogere basislijn
+    if(card.type==='ROOD' && !S._redAmp && warmingTier()>0){
+      const extra=warmingTier();
+      n+=extra; S._redAmp=true;
+      log(`🌡️ Vastgelegde Opwarming verhevigt de hitte: +${extra} 🔴 in ${card.stad}.`, 'bad');
     }
     plaatsCubes(card.stad, card.type, n);
   }
@@ -1233,6 +1268,7 @@ async function eindeActies(){
   if(S.over) return;
   // Pressure-fase
   S.phase='pressure';
+  S._redAmp=false; // opwarming-amplificatie geldt 1× per fase
   render();
   const rates=RATES[S.diff];
   const rate=rates[Math.min(Math.max(S.escN,1),rates.length)-1];
@@ -1287,6 +1323,18 @@ function volgendeSpeler(){
       [c.name,...c.conns].forEach(s=>{ if(cube(s,'GROEN')>max){max=cube(s,'GROEN');doel=s;} });
       if(doel){ verwijderCube(doel,'GROEN',1); log(`🌿 Ecosystem Recovery Zone (${c.name}) herstelt 1 groen blokje in ${doel}.`, 'good'); }
     });
+    // Transitie-investeringen betalen zich uit (co-benefit, long-term payoff)
+    if(S.investeringen.length){
+      let totEcon=0, totWarm=0;
+      S.investeringen.forEach(iv=>{ totEcon+=iv.econ; totWarm+=iv.warming; iv.rondes--; });
+      if(totEcon>0) wijzigEcon(totEcon, `${S.investeringen.length} transitie-investering(en)`);
+      if(totWarm>0 && S.warming>0) wijzigWarming(-totWarm, 'transitie-investering werpt vruchten af');
+      S.investeringen=S.investeringen.filter(iv=>iv.rondes>0);
+    }
+    // Vastgelegde Opwarming stijgt door aanhoudende, onbehandelde uitstoot
+    if(!S.warmingHalt && boardRoodZwart()>=WARMING_RISE_AT){
+      wijzigWarming(1, `aanhoudende uitstoot (${boardRoodZwart()} 🔴+⚫ op het bord)`);
+    }
     // verlopen tijdelijke legacies
     S.legacyActive=S.legacyActive.filter(l=>{
       if(l.expires && S.round>=l.expires){
@@ -1525,7 +1573,14 @@ async function actieDoorbraak(){
   const cd=CURES.find(c=>c.id===cureId);
   log(`💡 <b>DOORBRAAK: ${cd.naam}!</b> ${cd.effectText}`, 'good');
   // cure-effecten op legacies
-  if(cureId==='energie'){ verwijderLegacy('lockin'); verwijderLegacy('arctic'); }
+  if(cureId==='energie'){
+    verwijderLegacy('lockin'); verwijderLegacy('arctic');
+    // Co-benefit: de transitie-boom. Opwarming stopt met stijgen + directe afkoeling + economische impuls.
+    S.warmingHalt=true;
+    log(`☀️ Schone Energie stopt de opbouw van Vastgelegde Opwarming.`, 'good');
+    if(S.warming>0) wijzigWarming(-3, 'schone-energietransitie koelt de basislijn');
+    wijzigEcon(2, 'transitie-boom (groene banen & energiezekerheid)');
+  }
   if(cureId==='eco'){ verwijderLegacy('biodiv'); verwijderLegacy('famine'); }
   if(cureId==='sociaal'){
     verwijderLegacy('backlash'); verwijderLegacy('protestwave'); verwijderLegacy('famine');
@@ -1544,6 +1599,23 @@ async function actieCampagne(){
   if(!gratis && S.economie<1) return;
   if(!gratis) wijzigEcon(-1,'sociale campagne');
   wijzigSociaal(1,'sociale campagne'+(gratis?' (gratis bij Economic & Social Hub)':''));
+  gebruikActie();
+}
+async function actieInvesteren(){
+  const p=curP();
+  if(S.steden[p.stad].gebouw==null || S.economie<INVEST_COST) return;
+  const ok=await showModal({
+    title:'🌱 Investeer in transitie',
+    html:`<p>Je zet via de infrastructuur in ${p.stad} kapitaal in op de lange termijn.</p>
+      <p class="reqline no">Kost nu: ${INVEST_COST} economie.</p>
+      <p class="reqline ok">Levert de komende ${INVEST_RONDES} ronden elk op: +${INVEST_ECON} economie én −${INVEST_WARMING} Vastgelegde Opwarming.</p>
+      <p style="color:var(--muted);font-size:12px">Klimaatactie is geen pure kostenpost: schone energie en efficiëntie betalen zich terug in banen, energiezekerheid en een koelere basislijn. Maar de winst komt later — de rekening nu.</p>`,
+    buttons:[{label:`Investeer (−${INVEST_COST} econ)`, value:true, cls:'good'},{label:'Annuleer', value:false}]
+  });
+  if(!ok) return;
+  wijzigEcon(-INVEST_COST, 'transitie-investering');
+  S.investeringen.push({rondes:INVEST_RONDES, econ:INVEST_ECON, warming:INVEST_WARMING});
+  log(`🌱 ${p.naam} investeert in transitie vanuit ${p.stad}: payoff over ${INVEST_RONDES} ronden.`, 'good');
   gebruikActie();
 }
 async function actieProtest(){
@@ -1938,7 +2010,9 @@ function renderSidebar(){
     <div class="track" title="Aantal Escalation-kaarten dat al is omgeslagen. Bepaalt hoeveel Pressure-kaarten per beurt vallen."><div class="tlabel">${ic('flame',13)}Escalaties</div>${pips(S.escN,S.diff,'danger')}<span class="tnum">tempo ${rate}</span></div>
     <div class="track" title="Betaalt gebouwen en campagnes. Op 0 + Escalation = verloren. Hoger is beter."><div class="tlabel">${ic('coins',13)}Economie</div>${pips(S.economie,ECON_MAX,'eco')}<span class="tnum">${S.economie}</span></div>
     <div class="track" title="Draagvlak voor maatregelen. ≥4 nodig voor de sociale doorbraak. Hoger is beter."><div class="tlabel">${ic('smile',13)}Acceptatie</div>${pips(S.sociaal,SOC_MAX,'soc')}<span class="tnum">${S.sociaal}</span></div>
-    <div style="margin-top:5px"><span class="dir bad">▲ rood = slechter</span> &nbsp; <span class="dir good">▲ groen/blauw = beter</span></div>`;
+    <div class="track" title="Klimaatinertie: opwarming die al is vastgelegd door eerdere uitstoot. Stijgt als je rood/zwart laat oplopen (≥${WARMING_RISE_AT} op het bord). Kun je NIET wegbehandelen — alleen via investeren of de Schone Energie-doorbraak. Per ${WARMING_TIER} punten legt de eerste rode Pressure-kaart 1 extra blokje. Lager is beter."><div class="tlabel">${ic('flame',13)}Opwarming</div>${pips(S.warming,WARMING_MAX,'danger')}<span class="tnum">${S.warming}/${WARMING_MAX}${warmingTier()>0?` · +${warmingTier()}🔴`:''}${S.warmingHalt?' · ⏸':''}</span></div>
+    <div style="margin-top:5px"><span class="dir bad">▲ rood = slechter</span> &nbsp; <span class="dir good">▲ groen/blauw = beter</span></div>
+    ${S.investeringen.length?`<div class="invest-row" title="Lopende transitie-investeringen die zich de komende ronden uitbetalen">${ic('leaf',12)} Investeringen: ${S.investeringen.map(iv=>`<b>${iv.rondes}⟳</b>`).join(' ')} <span style="color:var(--muted)">(elk +${INVEST_ECON} econ · −${INVEST_WARMING}🌡️ per ronde)</span></div>`:''}`;
   document.getElementById('curesBox').innerHTML=CURES.map(c=>{
     const done=S.cures[c.id];
     const nK=cureKaartEis(c.id);
@@ -1975,6 +2049,8 @@ function adviseur(){
   for(const cu of CURES){
     if(!S.cures[cu.id] && stadk.length>=cureKaartEis(cu.id) && cureCheck(cu.id).ok) return `Doorbraak <b>${cu.naam}</b> is haalbaar waar je nu staat — gebruik de Doorbraak-knop nu!`;
   }
+  if(!S.warmingHalt && boardRoodZwart()>=WARMING_RISE_AT-2 && S.warming<WARMING_MAX) return `Veel 🔴+⚫ op het bord (${boardRoodZwart()}): bij ${WARMING_RISE_AT}+ stijgt de Vastgelegde Opwarming — en die krijg je niet terug door te behandelen. Ruim rood/zwart op, of investeer in transitie.`;
+  if(warmingTier()>0 && S.economie>=INVEST_COST && S.steden[p.stad].gebouw && S.investeringen.length===0) return `Opwarming amplificeert de hitte (+${warmingTier()}🔴/fase). Sta je bij een gebouw? Investeer in transitie: kost ${INVEST_COST} nu, levert economie én afkoeling terug.`;
   if(S.sociaal<=1 && !S.cures.sociaal) return `Acceptatie op ${S.sociaal}: elke Escalation vreet verder. Bouwen kost meer en de sociale doorbraak is geblokkeerd. Campagne of Diplomatie nu.`;
   if(S.economie<=1) return `Economie op ${S.economie}: bij 0 verlies je zodra een Escalation treft. Speel zuinig of gebruik Green Bonds.`;
   if(gebouwSteden().length<2) return `Geen infrastructuur: zonder gebouwen zijn doorbraken onmogelijk. Bouw nu — kost 1 stadskaart + 1 economie.`;
@@ -2032,6 +2108,7 @@ function renderBottom(){
   b('deel', ic('swap')+'Deel', actieDeel, !kan||!S.players.some(q=>q!==p&&q.stad===p.stad));
   b('doorbraak', ic('bulb')+'Doorbraak', actieDoorbraak, !kan||!CURES.some(cc=>!S.cures[cc.id]&&cureCheck(cc.id).ok&&p.hand.filter(k=>!kaartIsEvent(k)).length>=cureKaartEis(cc.id)));
   b('campagne', ic('mega')+'Campagne', actieCampagne, !kan||(S.economie<1&&c.gebouw!=='H'));
+  b('investeer', ic('leaf')+'Investeer', actieInvesteren, !kan||!c.gebouw||S.economie<INVEST_COST);
   const anyProtest=CITIES.some(x=>S.steden[x.name].protest>0);
   b('protest', ic('check')+'De-escaleer', actieProtest, (S.cures.sociaal? (S.phase!=='acties'||S.over) : !kan) || (c.protest===0 && !(c.gebouw&&anyProtest)));
   if(p.rol==='scientist' || c.gebouw==='R'){
@@ -2085,6 +2162,7 @@ const ACTION_INFO={
   deel:{t:'Deel kennis (1 actie)', d:'Geef of neem de stadskaart van de stad waar jullie sámen staan. De Diplomat mag elke kaart delen; na Mondiale Samenwerking mag iedereen dat. Zo verzamelt één speler de 4 kaarten voor een doorbraak.'},
   doorbraak:{t:'Doorbraak (1 actie + 4 stadkaarten)', d:'Dé winconditie. Lever 4 stadkaarten in terwijl je bij het juiste gebouw staat (zie de eisen in de zijbalk). Alle 4 doorbraken samen = winst. Specialisten hebben er maar 3 nodig voor "hun" doorbraken.'},
   campagne:{t:'Sociale campagne (1 actie + 1 economie)', d:'Verhoog de sociale acceptatie met 1 (gratis in een stad met Economic & Social Hub). Waarom? Onder acceptatie 2 wordt bouwen duurder en is de Veerkrachtige Samenleving-doorbraak geblokkeerd; vanaf 4 wordt die bereikbaar. Acceptatie daalt door crisiskaarten — soms moet je actief bijsturen.'},
+  investeer:{t:'Investeer in transitie (1 actie + 2 economie, bij een gebouw)', d:'De korte-termijn-versus-lange-termijn-keuze. Je betaalt nu 2 economie, maar de komende 3 ronden krijg je elke ronde +1 economie én −1 Vastgelegde Opwarming. Netto verdien je economie terug én koel je de klimaatinertie — klimaatactie als investering, niet als offer. Waarom? Vastgelegde Opwarming kun je niet wegbehandelen; investeren (of de Schone Energie-doorbraak) is de enige manier om de hitte-basislijn omlaag te brengen. Vereist een gebouw in je stad (de infrastructuur die de investering draagt).'},
   protest:{t:'De-escaleer protest (1 actie)', d:'Verwijder een protesttoken (oranje !) uit je huidige stad. Sta je in een stad mét gebouw, dan mag je via het infrastructuurnetwerk protest in élke stad de-escaleren. Protest maakt bouwen daar +1 economie duurder. Gratis na de Veerkrachtige Samenleving-doorbraak.'},
   peek:{t:'Systeemanalyse (gratis, 1×/beurt)', d:'Bekijk de volgende Pressure-kaart, zodat het team weet waar de volgende klap valt. De Systems Scientist kan dit overal; iedereen anders kan het in een stad met een Research Hub (tenzij AI Governance Failure actief is).'},
   fixai:{t:'Herstel AI-governance (1 actie + 1 kaart)', d:'Alleen de Systems Scientist kan de AI Governance Failure neutraliseren door 1 actie en 1 willekeurige kaart in te leveren.'},
@@ -2182,6 +2260,10 @@ const REGELS_HTML=`
 💥 <b>Uitbraken</b>: een 4e blokje van één kleur laat de stad uitbarsten naar alle buren (Cascade +1, kettingreacties mogelijk).<br>
 🧊 <b>Tipping points</b>: 10+ rode blokjes → Arctisch kantelpunt; 4+ gele blokjes in Zuid-Azië/Sub-Sahara → voedselspiraal.<br>
 🃏 <b>Compound-effecten</b>: Pressure-kaarten worden erger als er al andere druk ligt.</p>
+<h3 style="margin:10px 0 6px">Vastgelegde Opwarming & investeren (korte vs. lange termijn)</h3>
+<p>🌡️ <b>Vastgelegde Opwarming</b> is klimaatinertie: opwarming die je al hebt vastgelegd door eerdere uitstoot. Laat je rood + zwart oplopen (≥${WARMING_RISE_AT} blokjes op het bord aan het einde van een ronde), dan stijgt de track met 1. Je kunt dit <b>niet wegbehandelen</b> — dat is het verschil met een ziekte. Per ${WARMING_TIER} punten plaatst de eerste rode Pressure-kaart van elke ronde 1 extra 🔴: de basislijn is gewoon heter geworden.<br>
+🌱 <b>Investeren</b> (1 actie + ${INVEST_COST} economie, bij een gebouw) is de doorlopende manier om de opwarming te keren — én het verdient zichzelf terug. De volgende ${INVEST_RONDES} ronden krijg je elk +${INVEST_ECON} economie én −${INVEST_WARMING} opwarming. Klimaatactie als investering, niet als offer: je betaalt nu, je oogst later.<br>
+☀️ De <b>Schone Energie-doorbraak</b> stopt de opwarming definitief, koelt de basislijn en geeft een economische impuls (de transitie-boom).</p>
 <h3 style="margin:10px 0 6px">Verliezen</h3>
 <p>① Cascade Track vol (${CASCADE_MAX}) · ② een blokjesvoorraad op · ③ Player Deck op · ④ economie 0 op het moment van een Escalation.</p>
 <h3 style="margin:10px 0 6px">Winnen</h3>
@@ -2240,6 +2322,7 @@ document.getElementById('btnNew').onclick=async()=>{
       <div class="indrow"><span class="sw" style="background:#5DADE2"></span>Sociale acceptatie — <span class="dir good" style="margin:0">omhoog = beter</span> (≥4 nodig voor sociale doorbraak)</div>
       <div class="indrow"><span class="sw" style="background:#E0584C"></span><span class="sw" style="background:#4CAF50"></span><span class="sw" style="background:#546E7A"></span><span class="sw" style="background:#F2C12E"></span>Blokjesvoorraad — een kleur óp = verloren</div></div>
     <div class="si"><b>${ic('flame',13)}Meerdere escalatiepaden</b>Escalation-kaarten brengen oude brandhaarden terug, triggeren Crisis Surges en blijvende Legacy-effecten. Tipping points (te veel rood of geel op het bord) verergeren alles vanzelf.</div>
+    <div class="si"><b>${ic('leaf',13)}Korte vs. lange termijn</b>Klimaat reageert traag. <b style="display:inline">Vastgelegde Opwarming</b> stijgt als je rood/zwart laat oplopen en kun je níet wegbehandelen — alleen <b style="display:inline">investeren</b> (kost nu, betaalt later economie + afkoeling) of de Schone Energie-doorbraak keren het. Vroeg ingrijpen voorkomt dat het verleden je inhaalt.</div>
     <div class="si"><b>${ic('users',13)}De rollen</b>Elke speler is een specialist met een eigen achtergrond en vaardigheid. Klik een naam voor het verhaal:
       <div class="rolgallery">${ROLLEN.map(r=>`<span class="rolchip" data-rol="${r.id}" style="--c:${r.kleur}">${r.naam}</span>`).join('')}</div></div>
     <div class="si"><b>${ic('book',13)}Bediening</b>Klik direct op een verbonden stad (gestippelde ring) om te reizen; klik je eigen stad om te behandelen. <b style="display:inline">Rechtsklik op een stad</b> = dossier (wat speelt daar). Rechtsklik op een actieknop of handkaart = uitleg. Linksklik op een handkaart = spelen (vlucht/event). Scroll = zoomen, slepen = verschuiven. Volledige regels: knop "Regels" rechtsboven.</div>`;

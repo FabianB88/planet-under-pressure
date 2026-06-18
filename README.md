@@ -34,7 +34,8 @@ het aantal spelers en de moeilijkheid (4 / 5 / 6 Escalation-kaarten).
   - 🏛️ Economic & Social Hub — +1 economie per ronde (1×) en gratis sociale campagnes
 - **Bewuste keuze: 28 steden, geen 48** — het Pressure-deck (24 kaarten, vaste stad↔type-koppeling) zou bij een Pandemic-formaat bord de helft van de steden nooit raken; 28 houdt elke regio relevant en het potje playtest-baar (~60–90 min)
 - **4 doorbraken (cures)** met gebouw-, regio-, economie- en acceptatie-eisen
-- **Economische capaciteit** (start 4) en **sociale acceptatie** (start 2, schaal 0–6) als timinglagen
+- **Economische capaciteit** (start 6) en **sociale acceptatie** (start 2, schaal 0–6) als timinglagen
+- **Vastgelegde Opwarming + investeren** — klimaatinertie als korte-vs-lange-termijn-laag: opwarming die je níet kunt wegbehandelen (stijgt bij verwaarloosde rood/zwart-druk, verhevigt de hitte), en een Investeer-actie die nú economie kost maar zich over meerdere ronden terugbetaalt in economie én afkoeling (co-benefit). De Schone Energie-doorbraak stopt de opwarming en geeft een economische impuls.
 
 ## Meerdere escalatiepaden (bewust ontwerpdoel)
 
@@ -44,6 +45,7 @@ het aantal spelers en de moeilijkheid (4 / 5 / 6 Escalation-kaarten).
 4. **Tipping points uit bordstatus** — Arctisch kantelpunt (10+ rood) en Drought & Famine Spiral (4+ geel in Zuid-Azië/Sub-Sahara)
 5. **Compound-effecten** op Pressure-kaarten (druk versterkt druk)
 6. **Uitbraak-cascades** — 4e blokje laat een stad uitbarsten naar alle buren
+7. **Vastgelegde Opwarming** — onbehandelbare inertie die de rode druk structureel opvoert (≥8 rood+zwart op het bord → +1 per ronde; per 3 punten +1 🔴 op de eerste rode Pressure-kaart)
 
 ## Win / verlies
 
