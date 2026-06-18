@@ -86,7 +86,8 @@ laatstePressure  laatst getrokken pressure-kaart-id (voor sidebar)
 ## Tuningknoppen (sectie CONSTANTEN)
 
 ```
-SUPPLY_START   24   blokjes per kleur
+SUPPLY_START   30   blokjes per kleur (was 24 → kon nog op raken; outbreaks + warming-amp
+                    verbruiken vooral rood/zwart snel. Cascade hoort de doodsoorzaak te zijn)
 CASCADE_MAX    8    cascade vol = verlies
 HAND_LIMIT     7
 ECON_MAX 8, SOC_MAX 6

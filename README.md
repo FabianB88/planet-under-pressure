@@ -65,7 +65,7 @@ méér om op te lossen, en pas een volle Cascade Track betekent verlies.
 | Arctisch tipping point bij **10+** rood (doc: 4+) | 4+ triggert al bij setup; 10+ geeft mid-game spanning |
 | Shuttle werkt tussen **alle** gebouwen | Eén duidelijke regel i.p.v. per-gebouw-uitzonderingen in de digitale UI |
 | Alle 5 gebouwtypes direct beschikbaar (prototype-doc: eerst 3) | De cures voor Ecologisch Herstel en Mondiale Samenwerking vereisen de 2 extra gebouwtypes |
-| Blokjesvoorraad 24 per kleur (Pandemic-verhouding) | Playtest: 15–18 liep te snel leeg — je verloor al rond de eerste uitbraak op voorraad i.p.v. op de Cascade Track |
+| Blokjesvoorraad 30 per kleur | Playtest: 15–18 en later 24 liepen nog te snel leeg — outbreaks verspreiden een kleur naar álle buren (ook niet-rode steden verbruiken rode blokjes) en de opwarming-amplificatie plaatst extra rood. De Cascade Track hoort de doodsoorzaak te zijn, niet "blokjes op"; digitaal is er geen fysieke blokjeslimiet |
 
 Alle overige waarden (escalatietempo 2-2-3-3-3, startinfectie 3/2/1×3, handlimiet 7,
 startkaarten 4/3/2, economiestart 4, acceptatiestart 2, max 6 gebouwen) volgen de documenten.
