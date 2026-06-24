@@ -104,8 +104,17 @@ WARMING_MAX        10
 WARMING_RISE_AT    8    ≥ zoveel ROOD+ZWART op bord aan rondeafsluiting → +1 opwarming
 WARMING_TIER       3    elke 3 punten = +1 extra 🔴 op de 1e rode pressure-kaart/fase
 
-— Transitie-investering (Investeer-actie) —
-INVEST_COST 2, INVEST_RONDES 3, INVEST_ECON 1, INVEST_WARMING 1
+— Transitie-investering (Investeer-actie) — GEEN geldprinter meer —
+INVEST_COST 3   (was 2; payoff was netto winst die opstapelde tot het plafond)
+INVEST_RONDES 3, INVEST_ECON 1   → 3×1 = break-even op economie, géén winst
+INVEST_WARMING 1   (de echte beloning: −opwarming)
+INVEST_SOCIAL 1   eenmalig +acceptatie bij investeren (groene banen → draagvlak)
+
+— Economische druk (geeft economie bestemming + gevolgen aan de onderkant) —
+UPKEEP_AT  30   ≥ zoveel blokjes op het bord → −1 economie/ronde (crisisrespons; zelfcorrigerend)
+UPKEEP_AT2 46   ≥ zoveel → −2 (alleen bij totaal ontspoord bord; bewust géén ratchet)
+ECON_UNREST_AT  2   economie ≤ dit aan rondestart → bezuinigingen: −1 acceptatie
+ECON_PROTEST_AT 1   economie ≤ dit → bovendien een protesttoken in de zwaarst belaste stad
 ```
 
 ---
@@ -118,8 +127,10 @@ direct via `resolveEscalation`) → `handlimiet` → phase→pressure, **`S._red
 
 `volgendeSpeler()`: reset per-beurt-vlaggen, `S.cur=(cur+1)%n`. Bij wrap naar 0 = **rondestart**:
 `round++`, gebouw-effecten (H:+1 econ, N:herstel groen), **investeringen betalen uit**
-(per investering +econ/−warming, rondes--, verwijder bij 0), **opwarming stijgt** als
-`!warmingHalt && boardRoodZwart()>=WARMING_RISE_AT`, verlopen legacies opruimen. Daarna `actions=4`.
+(per investering +econ/−warming, rondes--, verwijder bij 0), **crisis-upkeep** (−1/−2 econ bij
+≥UPKEEP_AT/AT2 blokjes), **opwarming stijgt** als `!warmingHalt && boardRoodZwart()>=WARMING_RISE_AT`,
+**onrust-spiraal** (econ≤ECON_UNREST_AT → −1 sociaal; ≤ECON_PROTEST_AT → +1 protest in zwaarst
+belaste stad), verlopen legacies opruimen. Daarna `actions=4`.
 
 `resolvePressure(id)`: compound vóór primair → plaats blokje(s). Extra blokjes door:
 Famine Spiral (geel), regio-overbelasting, en **Vastgelegde Opwarming** (1e rode kaart/fase
@@ -137,8 +148,11 @@ Adaptation Center-schilden herstellen hier. (Opwarming-amplificatie geldt NIET v
   **Niet** wegbehandelbaar. Per tier (3 punten) legt de 1e rode pressure-kaart/fase 1 extra 🔴.
   Geen aparte verliesconditie — het is een amplificator (maakt een verwaarloosd bord organisch
   zwaarder), bewust géén nieuwe doodsmeter (game was al aan de zware kant).
-- **Investeer-actie** (`actieInvesteren`): bij een gebouw, kost INVEST_COST econ nu; pusht een
-  payoff die INVEST_RONDES ronden lang +econ/−warming geeft. Co-benefit: klimaatactie verdient terug.
+- **Investeer-actie** (`actieInvesteren`): bij een gebouw, kost INVEST_COST econ nu + eenmalig
+  +INVEST_SOCIAL acceptatie; pusht een payoff die INVEST_RONDES ronden lang +econ (break-even)
+  /−warming geeft. Co-benefit zónder geldprinter: de winst is klimaat + draagvlak, niet economie.
+  Economie heeft nu een tegenhanger via **crisis-upkeep** (rondestart) en lage economie tanden via
+  de **onrust-spiraal** — zie Spelloop en Tuningknoppen.
 - **Schone Energie-doorbraak** (cureId `energie` in `actieDoorbraak`): zet `warmingHalt=true`,
   −3 warming direct, +2 econ (transitie-boom).
 - UI: 5e track "Opwarming" in `renderSidebar` (tracksBox) + `.invest-row` met lopende payoffs.
