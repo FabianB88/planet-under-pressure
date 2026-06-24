@@ -39,8 +39,8 @@ button:disabled{opacity:.35;cursor:not-allowed}
 /* tracks */
 .track{display:flex;align-items:center;gap:6px;margin-bottom:5px;font-size:13px}
 .track .tlabel{width:118px;font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1px;font-size:12px;color:#b9b4aa}
-.pips{display:flex;gap:3px}
-.pip{width:13px;height:13px;border-radius:2px;background:#33363e;border:1px solid #494e58}
+.pips{display:flex;gap:2px;flex:1;min-width:0}
+.pip{flex:1 1 0;min-width:4px;height:13px;border-radius:2px;background:#33363e;border:1px solid #494e58}
 .pip.on{background:var(--geel);border-color:var(--geel)}
 .pip.danger.on{background:var(--rood);border-color:var(--rood)}
 .pip.soc.on{background:#5DADE2;border-color:#5DADE2}
@@ -485,13 +485,13 @@ const GEBOUWEN = {
   E:{naam:'Energy Transition Site',  icon:'zap',      desc:'Rood of zwart behandelen in deze stad verwijdert 1 extra blokje. Vereist voor Schone Energie. Bij lage acceptatie +1 economie bouwkosten.'},
   N:{naam:'Ecosystem Recovery Zone', icon:'leaf',     desc:'Herstelt aan het einde van elke ronde automatisch 1 groen blokje hier of in een buurstad. Vereist voor Ecologisch Herstel.'},
   A:{naam:'Adaptation Center',       icon:'shield',   desc:'Vangt de eerste rode uitbraak in deze stad op; het schild herstelt bij elke Escalation. Telt voor Veerkrachtige Samenleving.'},
-  H:{naam:'Economic & Social Hub',   icon:'landmark', desc:'Geeft aan het begin van elke ronde +1 economie (1×, hoeveel hubs ook). Sociale campagne is hier gratis. Vereist voor de sociale en governance-doorbraak.'},
+  H:{naam:'Economic & Social Hub',   icon:'landmark', desc:'Geeft aan het begin van elke ronde +2 economie (1×, hoeveel hubs ook). Sociale campagne is hier gratis. Vereist voor de sociale en governance-doorbraak.'},
 };
 const MAX_GEBOUWEN = 6;
 
 const CURES = [
   { id:'energie',    naam:'Schone Energie Transitie',  icon:'zap', type:'ROOD',
-    reqText:'4 stadkaarten uit ≥3 regio’s · sta bij Research Hub (R) of Energy Site (E) · economie ≥2',
+    reqText:'4 stadkaarten uit ≥3 regio’s · sta bij Research Hub (R) of Energy Site (E) · economie ≥3',
     effectText:'Rood behandelen = alle rode blokjes weg met 1 actie. Fossiele compound-effecten (rood/zwart) vervallen.' },
   { id:'eco',        naam:'Ecologisch Herstel',        icon:'leaf', type:'GROEN',
     reqText:'4 stadkaarten waarvan ≥2 uit Lat-Amerika / Sub-Sahara / ZO-Azië · sta bij Ecosystem Recovery Zone (N)',
@@ -608,7 +608,7 @@ const EVENTS = [
  {id:'comm',  naam:'Public Communication Surge', kost:1,
    desc:'Actie: +1 sociale acceptatie, óf verwijder 2 protesttokens. Neutraliseert Social Backlash.'},
  {id:'bonds', naam:'Green Bonds Package', kost:1,
-   desc:'Actie: +2 economie, óf bouw 1 gebouw gratis (zonder kaart of economie).'},
+   desc:'Actie: +4 economie, óf bouw 1 gebouw gratis (zonder kaart of economie).'},
  {id:'food',  naam:'Strategic Food Release', kost:1,
    desc:'Actie: verwijder alle 🟡 uit één stad, óf 1 🟡 uit elke stad in één macroregio.'},
 ];
@@ -668,7 +668,7 @@ const SUPPLY_START = 30;
 const CASCADE_MAX = 8;
 const CUREMAP = {ROOD:'energie', GROEN:'eco', ZWART:'governance', GEEL:'sociaal'};
 const HAND_LIMIT = 7;
-const ECON_MAX = 8, SOC_MAX = 6;
+const ECON_MAX = 15, SOC_MAX = 6;
 const START_STAD = 'Amsterdam';
 const RATES = {4:[2,2,3,3], 5:[2,2,3,3,3], 6:[2,2,3,3,3,4]};
 /* Vastgelegde Opwarming (klimaatinertie) — tuningknoppen */
@@ -676,20 +676,20 @@ const WARMING_MAX = 10;      // schaal van de track
 const WARMING_RISE_AT = 8;   // ≥ zoveel rood+zwart blokjes op het bord → +1 opwarming per ronde
 const WARMING_TIER = 3;      // elke zoveel punten = +1 extra rood blokje op de eerste rode Pressure-kaart/fase
 /* Transitie-investering — co-benefit met échte opportuniteitskost (geen geldprinter).
-   Je legt nu kapitaal vast; het komt over de ronden ~break-even terug, de winst zit in
-   klimaat (−opwarming) en draagvlak (groene banen). De rem zit in timing: die economie
+   Je legt nu kapitaal vast; het komt over de ronden grotendeels terug (netto −1), de winst
+   zit in klimaat (−opwarming) en draagvlak (groene banen). De rem zit in timing: die economie
    mis je nú, en met de crisis-upkeep hieronder is present kapitaal schaars. */
-const INVEST_COST = 3;       // economie nu (was 2 → payoff was netto winst die opstapelde)
+const INVEST_COST = 4;       // economie nu (op schaal 0–15: een echte kapitaalinzet)
 const INVEST_RONDES = 3;     // aantal ronden payoff
-const INVEST_ECON = 1;       // economie per ronde terug (3×1 = break-even, géén winst)
+const INVEST_ECON = 1;       // economie per ronde terug (3×1 = netto −1: verdient grotendeels terug)
 const INVEST_WARMING = 1;    // opwarming per ronde omlaag (de echte beloning: klimaat)
-const INVEST_SOCIAL = 1;     // eenmalig +acceptatie bij investeren (groene banen → draagvlak)
-/* Economische druk — geeft economie zowel een bestemming als gevolgen aan de onderkant.
-   Boven: een belast bord kost crisisrespons (zelfcorrigerend — ruim op en het dooft uit).
+const INVEST_SOCIAL = 2;     // eenmalig +acceptatie bij investeren (groene banen → draagvlak)
+/* Economische druk — geeft economie zowel een doorlopende bestemming als gevolgen aan de onderkant.
+   Boven: een belast bord kost crisisrespons, schaalt mee met de chaos (zelfcorrigerend).
    Onder: lage economie voedt onrust (bezuinigingen → minder draagvlak → bij krapte protest). */
-const UPKEEP_AT = 30;        // ≥ zoveel blokjes op het bord → −1 economie/ronde (schadeherstel)
-const UPKEEP_AT2 = 46;       // ≥ zoveel → −2 (alleen bij een totaal ontspoord bord; geen ratchet)
-const ECON_UNREST_AT = 2;    // ≤ dit aan rondestart → bezuinigingen: sociale acceptatie −1
+const UPKEEP_PER = 12;       // elke zoveel blokjes op het bord → −1 economie/ronde (schadeherstel)
+const UPKEEP_CAP = 4;        // maximale upkeep-drain per ronde (geen ratchet; dooft uit bij opruimen)
+const ECON_UNREST_AT = 3;    // ≤ dit aan rondestart → bezuinigingen: sociale acceptatie −1
 const ECON_PROTEST_AT = 1;   // ≤ dit → bovendien een protesttoken in de zwaarst belaste stad
 
 /* ── STATE ───────────────────────────────────────────────────── */
@@ -699,7 +699,7 @@ let UI = { mode:null, modeData:null, peeked:false };
 function nieuwState(spelers, diff, rolKeuzes){
   const st = {
     over:null, diff, round:1, phase:'acties',
-    economie:6, sociaal:2, cascade:0, escN:0,
+    economie:8, sociaal:2, cascade:0, escN:0,
     supply:{ROOD:SUPPLY_START,GROEN:SUPPLY_START,ZWART:SUPPLY_START,GEEL:SUPPLY_START},
     steden:{}, players:[], cur:0, actions:4,
     playerDeck:[], playerDiscard:[], pressureDeck:[], pressureDiscard:[],
@@ -1338,7 +1338,7 @@ function volgendeSpeler(){
   if(S.cur===0){
     S.round++;
     // gebouw-effecten bij rondestart
-    if(CITIES.some(c=>S.steden[c.name].gebouw==='H')) wijzigEcon(1,'Economic & Social Hub');
+    if(CITIES.some(c=>S.steden[c.name].gebouw==='H')) wijzigEcon(2,'Economic & Social Hub');
     CITIES.filter(c=>S.steden[c.name].gebouw==='N').forEach(c=>{
       let doel=null,max=0;
       [c.name,...c.conns].forEach(s=>{ if(cube(s,'GROEN')>max){max=cube(s,'GROEN');doel=s;} });
@@ -1356,7 +1356,7 @@ function volgendeSpeler(){
     // Zelfcorrigerend: ruim blokjes op en de druk zakt vanzelf (bewust géén permanente ratchet).
     if(!S.over){
       const bord=TYPEKEYS.reduce((a,t)=>a+totaalCubes(t),0);
-      const upkeep = bord>=UPKEEP_AT2 ? 2 : bord>=UPKEEP_AT ? 1 : 0;
+      const upkeep = Math.min(UPKEEP_CAP, Math.floor(bord/UPKEEP_PER));
       if(upkeep>0) wijzigEcon(-upkeep, `crisisrespons bij ${bord} crisisblokjes op het bord`);
     }
     // Vastgelegde Opwarming stijgt door aanhoudende, onbehandelde uitstoot
@@ -1440,7 +1440,7 @@ async function actieBehandel(){
 }
 function bouwKosten(letter, stad){
   const p=curP();
-  let econ=1;
+  let econ=2;
   if(p.rol==='engineer' && !p.usedFreeBuild) econ=0;
   if(letter==='E'){
     if(S.sociaal<=1 && !legacyActief('justtrans')) econ+=1;
@@ -1537,7 +1537,7 @@ function cureCheck(cureId){
   if(cureId==='energie'){
     const gOk=(g==='R'&&!ai)||g==='E';
     reg(gOk,'Sta in een stad met Research Hub (R) of Energy Transition Site (E)'+(ai&&g==='R'?' (Research Hub geblokkeerd door AI Governance Failure!)':''));
-    reg(S.economie>=2,'Economische capaciteit ≥ 2 (nu '+S.economie+')');
+    reg(S.economie>=3,'Economische capaciteit ≥ 3 (nu '+S.economie+')');
   }
   if(cureId==='eco') reg(g==='N','Sta in een stad met Ecosystem Recovery Zone (N)');
   if(cureId==='sociaal'){
@@ -1617,7 +1617,7 @@ async function actieDoorbraak(){
     S.warmingHalt=true;
     log(`☀️ Schone Energie stopt de opbouw van Vastgelegde Opwarming.`, 'good');
     if(S.warming>0) wijzigWarming(-3, 'schone-energietransitie koelt de basislijn');
-    wijzigEcon(2, 'transitie-boom (groene banen & energiezekerheid)');
+    wijzigEcon(4, 'transitie-boom (groene banen & energiezekerheid)');
   }
   if(cureId==='eco'){ verwijderLegacy('biodiv'); verwijderLegacy('famine'); }
   if(cureId==='sociaal'){
@@ -1647,7 +1647,7 @@ async function actieInvesteren(){
     html:`<p>Je zet via de infrastructuur in ${p.stad} kapitaal in op de lange termijn.</p>
       <p class="reqline no">Kost nu: ${INVEST_COST} economie — dat mis je deze ronden voor bouwen of campagnes.</p>
       <p class="reqline ok">Eenmalig: +${INVEST_SOCIAL} sociale acceptatie — groene banen scheppen draagvlak.</p>
-      <p class="reqline ok">De komende ${INVEST_RONDES} ronden elk: +${INVEST_ECON} economie (≈break-even) én −${INVEST_WARMING} Vastgelegde Opwarming.</p>
+      <p class="reqline ok">De komende ${INVEST_RONDES} ronden elk: +${INVEST_ECON} economie (verdient grotendeels terug) én −${INVEST_WARMING} Vastgelegde Opwarming.</p>
       <p style="color:var(--muted);font-size:12px">Klimaatactie is geen pure kostenpost én geen gratis geld: het kapitaal verdient zichzelf grofweg terug, de echte winst is een koelere basislijn en breder draagvlak. De rekening nu, de baten later.</p>`,
     buttons:[{label:`Investeer (−${INVEST_COST} econ)`, value:true, cls:'good'},{label:'Annuleer', value:false}]
   });
@@ -1772,12 +1772,12 @@ async function speelEvent(evId, handIdx){
   }
   if(evId==='bonds'){
     const optie=await showModal({title:'💶 Green Bonds Package', html:'<p>'+ev.desc+'</p>', buttons:[
-      {label:'+2 economie', value:'econ'},
+      {label:'+4 economie', value:'econ'},
       {label:'Bouw gratis een gebouw hier', value:'bouw', disabled:!!S.steden[p.stad].gebouw||gebouwSteden().length>=MAX_GEBOUWEN},
       {label:'Annuleer', value:null}]});
     if(!optie) return;
     verbruikEvent(handIdx);
-    if(optie==='econ') wijzigEcon(2,'Green Bonds Package');
+    if(optie==='econ') wijzigEcon(4,'Green Bonds Package');
     else await actieBouw(true);
     gebruikActie(ev.kost);
   }
@@ -2048,7 +2048,7 @@ function renderSidebar(){
     <h3>Wereldstatus</h3>
     <div class="track" title="Elke uitbraak telt +1. Vol = verloren. Lager is beter."><div class="tlabel">${ic('alert',13)}Cascade</div>${pips(S.cascade,CASCADE_MAX,'danger')}<span class="tnum">${S.cascade}/${CASCADE_MAX}</span></div>
     <div class="track" title="Aantal Escalation-kaarten dat al is omgeslagen. Bepaalt hoeveel Pressure-kaarten per beurt vallen."><div class="tlabel">${ic('flame',13)}Escalaties</div>${pips(S.escN,S.diff,'danger')}<span class="tnum">tempo ${rate}</span></div>
-    <div class="track" title="Betaalt gebouwen, campagnes en investeringen. Een vol bord (≥${UPKEEP_AT} blokjes) kost −1 economie/ronde aan crisisrespons (≥${UPKEEP_AT2}: −2). ≤${ECON_UNREST_AT} aan rondestart geeft onrust: −1 acceptatie, en bij ≤${ECON_PROTEST_AT} ook een protesttoken. Op 0 + Escalation = verloren. Hoger is beter."><div class="tlabel">${ic('coins',13)}Economie</div>${pips(S.economie,ECON_MAX,'eco')}<span class="tnum">${S.economie}${S.economie<=ECON_UNREST_AT?' ⚠':''}</span></div>
+    <div class="track" title="Betaalt gebouwen, campagnes en investeringen (schaal 0–${ECON_MAX}, gezond ~6–10). Een belast bord kost crisisrespons: −1 economie/ronde per ${UPKEEP_PER} blokjes (max −${UPKEEP_CAP}) — dooft uit zodra je opruimt. ≤${ECON_UNREST_AT} aan rondestart geeft onrust: −1 acceptatie, en bij ≤${ECON_PROTEST_AT} ook een protesttoken. Op 0 + Escalation = verloren. Hoger is beter."><div class="tlabel">${ic('coins',13)}Economie</div>${pips(S.economie,ECON_MAX,'eco')}<span class="tnum">${S.economie}${S.economie<=ECON_UNREST_AT?' ⚠':''}</span></div>
     <div class="track" title="Draagvlak voor maatregelen. ≥4 nodig voor de sociale doorbraak. Hoger is beter."><div class="tlabel">${ic('smile',13)}Acceptatie</div>${pips(S.sociaal,SOC_MAX,'soc')}<span class="tnum">${S.sociaal}</span></div>
     <div class="track" title="Klimaatinertie: opwarming die al is vastgelegd door eerdere uitstoot. Stijgt als je rood/zwart laat oplopen (≥${WARMING_RISE_AT} op het bord). Kun je NIET wegbehandelen — alleen via investeren of de Schone Energie-doorbraak. Per ${WARMING_TIER} punten legt de eerste rode Pressure-kaart 1 extra blokje. Lager is beter."><div class="tlabel">${ic('flame',13)}Opwarming</div>${pips(S.warming,WARMING_MAX,'danger')}<span class="tnum">${S.warming}/${WARMING_MAX}${warmingTier()>0?` · +${warmingTier()}🔴`:''}${S.warmingHalt?' · ⏸':''}</span></div>
     <div style="margin-top:5px"><span class="dir bad">▲ rood = slechter</span> &nbsp; <span class="dir good">▲ groen/blauw = beter</span></div>
@@ -2094,7 +2094,8 @@ function adviseur(){
   if(S.sociaal<=1 && !S.cures.sociaal) return `Acceptatie op ${S.sociaal}: elke Escalation vreet verder. Bouwen kost meer en de sociale doorbraak is geblokkeerd. Campagne of Diplomatie nu.`;
   if(S.economie<=ECON_UNREST_AT) return `Economie op ${S.economie} — te laag: aan elke rondestart kosten bezuinigingen je −1 acceptatie${S.economie<=ECON_PROTEST_AT?' én breekt er protest uit':''}, en bij 0 verlies je zodra een Escalation treft. Herstel nu via een Economic & Social Hub, Green Bonds of zuinig spelen.`;
   const bordTot=TYPEKEYS.reduce((a,t)=>a+totaalCubes(t),0);
-  if(bordTot>=UPKEEP_AT && S.economie<=4) return `Het bord raakt overvol (${bordTot} blokjes): crisisrespons & schadeherstel kosten je nu −${bordTot>=UPKEEP_AT2?2:1} economie per ronde. Ruim blokjes op — die drain dooft vanzelf uit zodra het bord opklaart.`;
+  const upk=Math.min(UPKEEP_CAP,Math.floor(bordTot/UPKEEP_PER));
+  if(upk>=2 && S.economie<=8) return `Het bord raakt overvol (${bordTot} blokjes): crisisrespons & schadeherstel kosten je nu −${upk} economie per ronde. Ruim blokjes op — die drain dooft vanzelf uit zodra het bord opklaart.`;
   if(gebouwSteden().length<2) return `Geen infrastructuur: zonder gebouwen zijn doorbraken onmogelijk. Bouw nu — kost 1 stadskaart + 1 economie.`;
   for(const regio of REGIONS){
     if(!regioTipActief(regio)){
@@ -2200,11 +2201,11 @@ const ACTION_INFO={
   beweeg:{t:'Beweeg (1 actie)', d:'Reis over een verbindingslijn naar een aangrenzende stad. Sneller: klik gewoon direct op een verbonden stad (gestippelde ring) op de kaart. Klik op je eigen stad om te behandelen.'},
   shuttle:{t:'Shuttle (1 actie)', d:'Reis van een stad met een gebouw direct naar een andere stad met een gebouw. Een snel mondiaal netwerk — bouw dus op strategische plekken.'},
   behandel:{t:'Behandel (1 actie)', d:'Verwijder 1 crisisblokje uit je huidige stad. Bij 3 blokjes van één kleur staat de stad op uitbarsten (witte rand)! Na de bijbehorende doorbraak verwijder je álle blokjes van die kleur in één actie. De Infrastructure Engineer verwijdert 2 bij rood/zwart.'},
-  bouw:{t:'Bouw (1 actie + stadskaart + economie)', d:'Bouw een gebouw in je huidige stad — je moet de stadskaart van díe stad in je hand hebben. Elk gebouw doet iets unieks: R = Pressure-kaart spieken · E = sterker rood/zwart behandelen · N = automatisch groenherstel per ronde · A = schild tegen rode uitbraken · H = +1 economie per ronde en gratis campagnes. Daarnaast zijn ze vereist voor doorbraken en vormen ze het shuttle-netwerk. Max 1 per stad, 6 op het bord.'},
+  bouw:{t:'Bouw (1 actie + stadskaart + economie)', d:'Bouw een gebouw in je huidige stad — je moet de stadskaart van díe stad in je hand hebben. Elk gebouw doet iets unieks: R = Pressure-kaart spieken · E = sterker rood/zwart behandelen · N = automatisch groenherstel per ronde · A = schild tegen rode uitbraken · H = +2 economie per ronde en gratis campagnes. Daarnaast zijn ze vereist voor doorbraken en vormen ze het shuttle-netwerk. Max 1 per stad, 6 op het bord.'},
   deel:{t:'Deel kennis (1 actie)', d:'Geef of neem de stadskaart van de stad waar jullie sámen staan. De Diplomat mag elke kaart delen; na Mondiale Samenwerking mag iedereen dat. Zo verzamelt één speler de 4 kaarten voor een doorbraak.'},
   doorbraak:{t:'Doorbraak (1 actie + 4 stadkaarten)', d:'Dé winconditie. Lever 4 stadkaarten in terwijl je bij het juiste gebouw staat (zie de eisen in de zijbalk). Alle 4 doorbraken samen = winst. Specialisten hebben er maar 3 nodig voor "hun" doorbraken.'},
   campagne:{t:'Sociale campagne (1 actie + 1 economie)', d:'Verhoog de sociale acceptatie met 1 (gratis in een stad met Economic & Social Hub). Waarom? Onder acceptatie 2 wordt bouwen duurder en is de Veerkrachtige Samenleving-doorbraak geblokkeerd; vanaf 4 wordt die bereikbaar. Acceptatie daalt door crisiskaarten — soms moet je actief bijsturen.'},
-  investeer:{t:`Investeer in transitie (1 actie + ${INVEST_COST} economie, bij een gebouw)`, d:`De korte-termijn-versus-lange-termijn-keuze. Je legt nu ${INVEST_COST} economie vast en krijgt eenmalig +${INVEST_SOCIAL} sociale acceptatie (groene banen scheppen draagvlak). De komende ${INVEST_RONDES} ronden krijg je elke ronde +${INVEST_ECON} economie (≈break-even — géén gratis geld) én −${INVEST_WARMING} Vastgelegde Opwarming. De échte winst is dus klimaat + draagvlak, niet economie: klimaatactie verdient zichzelf grofweg terug, maar de rekening komt nu. Waarom investeren? Vastgelegde Opwarming kun je niet wegbehandelen; investeren (of de Schone Energie-doorbraak) is de enige manier om de hitte-basislijn omlaag te brengen. Let op de timing: die ${INVEST_COST} economie mis je nú voor bouwen of campagnes. Vereist een gebouw in je stad.`},
+  investeer:{t:`Investeer in transitie (1 actie + ${INVEST_COST} economie, bij een gebouw)`, d:`De korte-termijn-versus-lange-termijn-keuze. Je legt nu ${INVEST_COST} economie vast en krijgt eenmalig +${INVEST_SOCIAL} sociale acceptatie (groene banen scheppen draagvlak). De komende ${INVEST_RONDES} ronden krijg je elke ronde +${INVEST_ECON} economie (verdient grotendeels terug — géén gratis geld) én −${INVEST_WARMING} Vastgelegde Opwarming. De échte winst is dus klimaat + draagvlak, niet economie: klimaatactie verdient zichzelf grofweg terug, maar de rekening komt nu. Waarom investeren? Vastgelegde Opwarming kun je niet wegbehandelen; investeren (of de Schone Energie-doorbraak) is de enige manier om de hitte-basislijn omlaag te brengen. Let op de timing: die ${INVEST_COST} economie mis je nú voor bouwen of campagnes. Vereist een gebouw in je stad.`},
   protest:{t:'De-escaleer protest (1 actie)', d:'Verwijder een protesttoken (oranje !) uit je huidige stad. Sta je in een stad mét gebouw, dan mag je via het infrastructuurnetwerk protest in élke stad de-escaleren. Protest maakt bouwen daar +1 economie duurder. Gratis na de Veerkrachtige Samenleving-doorbraak.'},
   peek:{t:'Systeemanalyse (gratis, 1×/beurt)', d:'Bekijk de volgende Pressure-kaart, zodat het team weet waar de volgende klap valt. De Systems Scientist kan dit overal; iedereen anders kan het in een stad met een Research Hub (tenzij AI Governance Failure actief is).'},
   fixai:{t:'Herstel AI-governance (1 actie + 1 kaart)', d:'Alleen de Systems Scientist kan de AI Governance Failure neutraliseren door 1 actie en 1 willekeurige kaart in te leveren.'},
@@ -2304,16 +2305,16 @@ const REGELS_HTML=`
 🃏 <b>Compound-effecten</b>: Pressure-kaarten worden erger als er al andere druk ligt.</p>
 <h3 style="margin:10px 0 6px">Vastgelegde Opwarming & investeren (korte vs. lange termijn)</h3>
 <p>🌡️ <b>Vastgelegde Opwarming</b> is klimaatinertie: opwarming die je al hebt vastgelegd door eerdere uitstoot. Laat je rood + zwart oplopen (≥${WARMING_RISE_AT} blokjes op het bord aan het einde van een ronde), dan stijgt de track met 1. Je kunt dit <b>niet wegbehandelen</b> — dat is het verschil met een ziekte. Per ${WARMING_TIER} punten plaatst de eerste rode Pressure-kaart van elke ronde 1 extra 🔴: de basislijn is gewoon heter geworden.<br>
-🌱 <b>Investeren</b> (1 actie + ${INVEST_COST} economie, bij een gebouw) is de doorlopende manier om de opwarming te keren. Je krijgt eenmalig +${INVEST_SOCIAL} acceptatie (groene banen) en de volgende ${INVEST_RONDES} ronden elk +${INVEST_ECON} economie (≈break-even) én −${INVEST_WARMING} opwarming. Géén gratis geld: de winst zit in klimaat + draagvlak. Klimaatactie als investering, niet als offer — je betaalt nu, de baten komen later.<br>
+🌱 <b>Investeren</b> (1 actie + ${INVEST_COST} economie, bij een gebouw) is de doorlopende manier om de opwarming te keren. Je krijgt eenmalig +${INVEST_SOCIAL} acceptatie (groene banen) en de volgende ${INVEST_RONDES} ronden elk +${INVEST_ECON} economie (verdient grotendeels terug) én −${INVEST_WARMING} opwarming. Géén gratis geld: de winst zit in klimaat + draagvlak. Klimaatactie als investering, niet als offer — je betaalt nu, de baten komen later.<br>
 ☀️ De <b>Schone Energie-doorbraak</b> stopt de opwarming definitief, koelt de basislijn en geeft een economische impuls (de transitie-boom).</p>
 <h3 style="margin:10px 0 6px">Verliezen</h3>
 <p>① Cascade Track vol (${CASCADE_MAX}) · ② een blokjesvoorraad op · ③ Player Deck op · ④ economie 0 op het moment van een Escalation.</p>
 <h3 style="margin:10px 0 6px">Winnen</h3>
-<p>Alle vier doorbraken: <b>Schone Energie</b> (≥3 regio's, bij Research Hub of Energy Site, economie ≥2) · <b>Ecologisch Herstel</b> (≥2 kaarten uit kwetsbare regio's, bij Ecosystem Recovery Zone) · <b>Veerkrachtige Samenleving</b> (≥3 regio's, acceptatie ≥4, bij Adaptation Center of Econ & Social Hub) · <b>Mondiale Samenwerking</b> (≥4 regio's, bij Economic & Social Hub).</p>
+<p>Alle vier doorbraken: <b>Schone Energie</b> (≥3 regio's, bij Research Hub of Energy Site, economie ≥3) · <b>Ecologisch Herstel</b> (≥2 kaarten uit kwetsbare regio's, bij Ecosystem Recovery Zone) · <b>Veerkrachtige Samenleving</b> (≥3 regio's, acceptatie ≥4, bij Adaptation Center of Econ & Social Hub) · <b>Mondiale Samenwerking</b> (≥4 regio's, bij Economic & Social Hub).</p>
 <h3 style="margin:10px 0 6px">Bediening</h3>
 <p>Rechtsklik op een actieknop of handkaart voor uitleg · scroll op de kaart om te zoomen, slepen om te verschuiven · klik een handkaart voor vluchten en events · een stapel van 3 blokjes met witte rand staat op uitbarsten.</p>
 <h3 style="margin:10px 0 6px">Economie & sociale acceptatie</h3>
-<p>💰 Economie betaalt gebouwen, campagnes en investeringen; crises vreten eraan. Een <b>vol bord</b> (≥${UPKEEP_AT} blokjes) kost bovendien −1 economie per ronde aan crisisrespons (≥${UPKEEP_AT2}: −2) — die drain dooft vanzelf uit zodra je opruimt. Loopt je economie tóch leeg, dan slaat het terug: bij <b>≤${ECON_UNREST_AT}</b> aan een rondestart kosten bezuinigingen je −1 acceptatie, en bij <b>≤${ECON_PROTEST_AT}</b> breekt er ook protest uit. Bij 0: niet bouwen, en een Escalation = verlies.<br>
+<p>💰 Economie loopt van 0 tot ${ECON_MAX} (gezond ~6–10): je betaalt er gebouwen, campagnes en investeringen mee, crises vreten eraan. Een <b>belast bord</b> kost bovendien crisisrespons: −1 economie per ronde per ${UPKEEP_PER} blokjes op het bord (max −${UPKEEP_CAP}) — die drain dooft vanzelf uit zodra je opruimt. Loopt je economie tóch leeg, dan slaat het terug: bij <b>≤${ECON_UNREST_AT}</b> aan een rondestart kosten bezuinigingen je −1 acceptatie, en bij <b>≤${ECON_PROTEST_AT}</b> breekt er ook protest uit. Bij 0: niet bouwen, en een Escalation = verlies.<br>
 🙌 Acceptatie stijgt door <i>zichtbare</i> crises en campagnes, daalt door dure maatregelen bij rust en door economische malaise. Onder 2: ⚡-bouwen kost +1 en de sociale doorbraak is geblokkeerd; bij 4+ wordt die bereikbaar. Vroeg ingrijpen is moeilijk, laat ingrijpen is duur — precies zoals in het echt.</p>
 <h3 style="margin:10px 0 6px">Digitale afwijkingen t.o.v. de papieren docs</h3>
 <p style="color:var(--muted);font-size:12px">Zwart behandelen schaalt mee met 🌍 Mondiale Samenwerking (treat-all) voor mechanische symmetrie · Arctisch tipping point op 10+ rood (i.p.v. 4+) voor digitale balans · doorbraken kosten 4 stadkaarten i.p.v. 5 (tuningregel uit het designdoc — met 24 stadkaarten totaal is 4×5 wiskundig vrijwel onhaalbaar) · shuttle werkt tussen alle gebouwen · alle 5 gebouwtypes beschikbaar zodat elke doorbraak haalbaar is.</p>`;
