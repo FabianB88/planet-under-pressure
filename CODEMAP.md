@@ -90,10 +90,12 @@ SUPPLY_START   30   blokjes per kleur (was 24 → kon nog op raken; outbreaks + 
                     verbruiken vooral rood/zwart snel. Cascade hoort de doodsoorzaak te zijn)
 CASCADE_MAX    8    cascade vol = verlies
 HAND_LIMIT     7
-ECON_MAX 8, SOC_MAX 6
+ECON_MAX 15, SOC_MAX 6   (economie herschaald 8→15 voor speltechnische ruimte; gezond ~6–10)
 START_STAD     'Amsterdam'
 RATES          {4:[2,2,3,3], 5:[2,2,3,3,3], 6:[2,2,3,3,3,4]}  pressure-kaarten/beurt per escN
-economie start 6  (in nieuwState; verhoogd van 4 — was te krap)
+economie start 8  (in nieuwState; 6→8 bij de herschaal — ruimte om te sparen én te dalen)
+bouwkosten     basis 2 (was 1; +1 modifiers: protest/lockin/E-bij-lage-acceptatie); engineer 1e gratis
+H-hub          +2 economie/rondestart (was +1; de economie-motor)
 sociaal start  2
 regioDrempel   3 × aantal steden + 2  (regio-overbelasting; functie in AUTO-LEGACY)
                overbelasting legt max 1 extra blokje PER pressure-fase (S._overloadDone),
@@ -105,16 +107,17 @@ WARMING_RISE_AT    8    ≥ zoveel ROOD+ZWART op bord aan rondeafsluiting → +1
 WARMING_TIER       3    elke 3 punten = +1 extra 🔴 op de 1e rode pressure-kaart/fase
 
 — Transitie-investering (Investeer-actie) — GEEN geldprinter meer —
-INVEST_COST 3   (was 2; payoff was netto winst die opstapelde tot het plafond)
-INVEST_RONDES 3, INVEST_ECON 1   → 3×1 = break-even op economie, géén winst
+INVEST_COST 4   (op schaal 0–15; echte kapitaalinzet)
+INVEST_RONDES 3, INVEST_ECON 1   → 3×1 = netto −1 (verdient grotendeels terug, géén winst)
 INVEST_WARMING 1   (de echte beloning: −opwarming)
-INVEST_SOCIAL 1   eenmalig +acceptatie bij investeren (groene banen → draagvlak)
+INVEST_SOCIAL 2   eenmalig +acceptatie bij investeren (groene banen → draagvlak)
 
-— Economische druk (geeft economie bestemming + gevolgen aan de onderkant) —
-UPKEEP_AT  30   ≥ zoveel blokjes op het bord → −1 economie/ronde (crisisrespons; zelfcorrigerend)
-UPKEEP_AT2 46   ≥ zoveel → −2 (alleen bij totaal ontspoord bord; bewust géén ratchet)
-ECON_UNREST_AT  2   economie ≤ dit aan rondestart → bezuinigingen: −1 acceptatie
+— Economische druk (geeft economie doorlopende bestemming + gevolgen aan de onderkant) —
+UPKEEP_PER 12   elke zoveel blokjes op het bord → −1 economie/ronde (crisisrespons; vloeiend, zelfcorrigerend)
+UPKEEP_CAP 4    maximale upkeep-drain/ronde (geen ratchet; dooft uit bij opruimen)
+ECON_UNREST_AT  3   economie ≤ dit aan rondestart → bezuinigingen: −1 acceptatie
 ECON_PROTEST_AT 1   economie ≤ dit → bovendien een protesttoken in de zwaarst belaste stad
+Andere geschaalde injecties: transitie-boom (Schone Energie-cure) +4 econ, Green Bonds +4, cure-eis energie econ ≥3
 ```
 
 ---
@@ -127,8 +130,8 @@ direct via `resolveEscalation`) → `handlimiet` → phase→pressure, **`S._red
 
 `volgendeSpeler()`: reset per-beurt-vlaggen, `S.cur=(cur+1)%n`. Bij wrap naar 0 = **rondestart**:
 `round++`, gebouw-effecten (H:+1 econ, N:herstel groen), **investeringen betalen uit**
-(per investering +econ/−warming, rondes--, verwijder bij 0), **crisis-upkeep** (−1/−2 econ bij
-≥UPKEEP_AT/AT2 blokjes), **opwarming stijgt** als `!warmingHalt && boardRoodZwart()>=WARMING_RISE_AT`,
+(per investering +econ/−warming, rondes--, verwijder bij 0), **crisis-upkeep** (−1 econ per
+UPKEEP_PER blokjes, max −UPKEEP_CAP), **opwarming stijgt** als `!warmingHalt && boardRoodZwart()>=WARMING_RISE_AT`,
 **onrust-spiraal** (econ≤ECON_UNREST_AT → −1 sociaal; ≤ECON_PROTEST_AT → +1 protest in zwaarst
 belaste stad), verlopen legacies opruimen. Daarna `actions=4`.
 

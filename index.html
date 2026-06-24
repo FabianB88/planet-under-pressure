@@ -2147,7 +2147,7 @@ function renderBottom(){
   b('beweeg', ic('nav')+'Beweeg', actieBeweeg, !kan);
   b('shuttle', ic('repeat')+'Shuttle', actieShuttle, !kan||shuttleDoelen().length===0);
   b('behandel', ic('minus')+'Behandel', actieBehandel, !kan||!heeftCubes);
-  b('bouw', ic('hammer')+'Bouw', ()=>actieBouw(false), !kan||!!c.gebouw||!p.hand.includes(p.stad)||S.economie===0);
+  b('bouw', ic('hammer')+'Bouw', ()=>actieBouw(false), !kan||!!c.gebouw||!p.hand.includes(p.stad)||(S.economie<bouwKosten('R',p.stad)&&!(p.rol==='engineer'&&!p.usedFreeBuild)));
   b('deel', ic('swap')+'Deel', actieDeel, !kan||!S.players.some(q=>q!==p&&q.stad===p.stad));
   b('doorbraak', ic('bulb')+'Doorbraak', actieDoorbraak, !kan||!CURES.some(cc=>!S.cures[cc.id]&&cureCheck(cc.id).ok&&p.hand.filter(k=>!kaartIsEvent(k)).length>=cureKaartEis(cc.id)));
   b('campagne', ic('mega')+'Campagne', actieCampagne, !kan||(S.economie<1&&c.gebouw!=='H'));
