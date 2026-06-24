@@ -675,11 +675,22 @@ const RATES = {4:[2,2,3,3], 5:[2,2,3,3,3], 6:[2,2,3,3,3,4]};
 const WARMING_MAX = 10;      // schaal van de track
 const WARMING_RISE_AT = 8;   // ≥ zoveel rood+zwart blokjes op het bord → +1 opwarming per ronde
 const WARMING_TIER = 3;      // elke zoveel punten = +1 extra rood blokje op de eerste rode Pressure-kaart/fase
-/* Transitie-investering — short cost / long payoff (co-benefit) */
-const INVEST_COST = 2;       // economie nu
+/* Transitie-investering — co-benefit met échte opportuniteitskost (geen geldprinter).
+   Je legt nu kapitaal vast; het komt over de ronden ~break-even terug, de winst zit in
+   klimaat (−opwarming) en draagvlak (groene banen). De rem zit in timing: die economie
+   mis je nú, en met de crisis-upkeep hieronder is present kapitaal schaars. */
+const INVEST_COST = 3;       // economie nu (was 2 → payoff was netto winst die opstapelde)
 const INVEST_RONDES = 3;     // aantal ronden payoff
-const INVEST_ECON = 1;       // economie per ronde terug
-const INVEST_WARMING = 1;    // opwarming per ronde omlaag
+const INVEST_ECON = 1;       // economie per ronde terug (3×1 = break-even, géén winst)
+const INVEST_WARMING = 1;    // opwarming per ronde omlaag (de echte beloning: klimaat)
+const INVEST_SOCIAL = 1;     // eenmalig +acceptatie bij investeren (groene banen → draagvlak)
+/* Economische druk — geeft economie zowel een bestemming als gevolgen aan de onderkant.
+   Boven: een belast bord kost crisisrespons (zelfcorrigerend — ruim op en het dooft uit).
+   Onder: lage economie voedt onrust (bezuinigingen → minder draagvlak → bij krapte protest). */
+const UPKEEP_AT = 30;        // ≥ zoveel blokjes op het bord → −1 economie/ronde (schadeherstel)
+const UPKEEP_AT2 = 46;       // ≥ zoveel → −2 (alleen bij een totaal ontspoord bord; geen ratchet)
+const ECON_UNREST_AT = 2;    // ≤ dit aan rondestart → bezuinigingen: sociale acceptatie −1
+const ECON_PROTEST_AT = 1;   // ≤ dit → bovendien een protesttoken in de zwaarst belaste stad
 
 /* ── STATE ───────────────────────────────────────────────────── */
 let S = null;          // game state
@@ -1341,9 +1352,26 @@ function volgendeSpeler(){
       if(totWarm>0 && S.warming>0) wijzigWarming(-totWarm, 'transitie-investering werpt vruchten af');
       S.investeringen=S.investeringen.filter(iv=>iv.rondes>0);
     }
+    // Crisisrespons & schadeherstel drukken op de schatkist — een belast bord kost geld.
+    // Zelfcorrigerend: ruim blokjes op en de druk zakt vanzelf (bewust géén permanente ratchet).
+    if(!S.over){
+      const bord=TYPEKEYS.reduce((a,t)=>a+totaalCubes(t),0);
+      const upkeep = bord>=UPKEEP_AT2 ? 2 : bord>=UPKEEP_AT ? 1 : 0;
+      if(upkeep>0) wijzigEcon(-upkeep, `crisisrespons bij ${bord} crisisblokjes op het bord`);
+    }
     // Vastgelegde Opwarming stijgt door aanhoudende, onbehandelde uitstoot
     if(!S.warmingHalt && boardRoodZwart()>=WARMING_RISE_AT){
       wijzigWarming(1, `aanhoudende uitstoot (${boardRoodZwart()} 🔴+⚫ op het bord)`);
+    }
+    // Lage economie voedt maatschappelijke onrust: bezuinigingen ondermijnen het draagvlak,
+    // en bij acute krapte breekt protest uit. Spiraal die je keert door de economie te herstellen.
+    if(!S.over && S.economie<=ECON_UNREST_AT){
+      wijzigSociaal(-1, `economische malaise (economie ${S.economie}) — bezuinigingen ondermijnen draagvlak`);
+      if(S.economie<=ECON_PROTEST_AT){
+        let doel=null,max=-1;
+        CITIES.forEach(c=>{ const t=TYPEKEYS.reduce((x,k)=>x+cube(c.name,k),0); if(t>max){max=t;doel=c.name;} });
+        if(doel){ S.steden[doel].protest++; log(`✊ Economische malaise voedt protest in ${doel}.`, 'bad'); }
+      }
     }
     // verlopen tijdelijke legacies
     S.legacyActive=S.legacyActive.filter(l=>{
@@ -1617,13 +1645,15 @@ async function actieInvesteren(){
   const ok=await showModal({
     title:'🌱 Investeer in transitie',
     html:`<p>Je zet via de infrastructuur in ${p.stad} kapitaal in op de lange termijn.</p>
-      <p class="reqline no">Kost nu: ${INVEST_COST} economie.</p>
-      <p class="reqline ok">Levert de komende ${INVEST_RONDES} ronden elk op: +${INVEST_ECON} economie én −${INVEST_WARMING} Vastgelegde Opwarming.</p>
-      <p style="color:var(--muted);font-size:12px">Klimaatactie is geen pure kostenpost: schone energie en efficiëntie betalen zich terug in banen, energiezekerheid en een koelere basislijn. Maar de winst komt later — de rekening nu.</p>`,
+      <p class="reqline no">Kost nu: ${INVEST_COST} economie — dat mis je deze ronden voor bouwen of campagnes.</p>
+      <p class="reqline ok">Eenmalig: +${INVEST_SOCIAL} sociale acceptatie — groene banen scheppen draagvlak.</p>
+      <p class="reqline ok">De komende ${INVEST_RONDES} ronden elk: +${INVEST_ECON} economie (≈break-even) én −${INVEST_WARMING} Vastgelegde Opwarming.</p>
+      <p style="color:var(--muted);font-size:12px">Klimaatactie is geen pure kostenpost én geen gratis geld: het kapitaal verdient zichzelf grofweg terug, de echte winst is een koelere basislijn en breder draagvlak. De rekening nu, de baten later.</p>`,
     buttons:[{label:`Investeer (−${INVEST_COST} econ)`, value:true, cls:'good'},{label:'Annuleer', value:false}]
   });
   if(!ok) return;
   wijzigEcon(-INVEST_COST, 'transitie-investering');
+  if(INVEST_SOCIAL>0) wijzigSociaal(INVEST_SOCIAL, 'groene banen uit transitie-investering');
   S.investeringen.push({rondes:INVEST_RONDES, econ:INVEST_ECON, warming:INVEST_WARMING});
   log(`🌱 ${p.naam} investeert in transitie vanuit ${p.stad}: payoff over ${INVEST_RONDES} ronden.`, 'good');
   gebruikActie();
